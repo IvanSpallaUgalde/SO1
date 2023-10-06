@@ -1,4 +1,5 @@
 #include "my_lib.h"
+#include <stdlib.h>
 
 size_t my_strlen(const char *str){
     size_t len = 0;
@@ -24,7 +25,7 @@ int my_strcmp(const char *str1, const char *str2){
     return (str1[i] - str2[j]);
 }
 
-char my_strcat(char *dest, const char *str){
+char *my_strcat(char *dest, const char *str){
 
     //Tamaño es igual al num de char de str + num de char de dest + 1 (caracter nulo)
     size_t tam = sizeof(char) * (my_strlen(str) + my_strlen(dest) + 1);
@@ -37,6 +38,7 @@ char my_strcat(char *dest, const char *str){
         *a = *dest;
         dest++;
         a++;
+        i++;
     }
 
     while (*str)
@@ -44,6 +46,7 @@ char my_strcat(char *dest, const char *str){
         *a = *str;
         str++;
         a++;
+        i++;
     }
     
     *a = '\0';
@@ -56,13 +59,10 @@ char my_strcat(char *dest, const char *str){
 
     dest = a;
 
-    //Debug
-    printf("Contenido de dest: %s\n", dest);
-
     return (char *)dest;
 }
 
-char my_strchr(const char *str, int c){
+char *my_strchr(const char *str, int c){
     
     //Mientras str =! 0
     while (*str)
@@ -77,12 +77,4 @@ char my_strchr(const char *str, int c){
         str++;
     }
     
-}
-
-int main(){
-    char dest[] = "Hola ";
-    char str[] = "mundo";
-
-    my_strcat(dest, str);
-    return 0;
 }
