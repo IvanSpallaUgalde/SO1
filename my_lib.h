@@ -40,4 +40,3 @@ int my_stack_len(struct my_stack *stack);
 int my_stack_purge(struct my_stack *stack); 
 struct my_stack *my_stack_read(char *filename);
 int my_stack_write(struct my_stack *stack, char *filename);
-    
