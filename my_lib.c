@@ -86,8 +86,9 @@ char *my_strncpy(char *dest, const char *src, size_t n){
         size_t n = 10; //Borrar
 
         //Inicializamos una variable auxiliar que nos permitirá modificar
-        //el contenido de dest. Lo inicializamos con \0
-        char auxDest[strlen(dest)];
+        //el contenido de dest. Lo inicializamos con "null"
+
+        char auxDest[sizeof(dest)];
         
         for(int idx=0; idx<sizeof(auxDest); idx++) {
             auxDest[idx] = '\0';
@@ -103,4 +104,5 @@ char *my_strncpy(char *dest, const char *src, size_t n){
         
         dest=auxDest;
         printf("Destino: %s\n", dest); //Borrar. Comprueba el resultado
+        return 0;
 }
