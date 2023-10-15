@@ -78,3 +78,29 @@ char *my_strchr(const char *str, int c){
     }
     
 }
+
+char *my_strncpy(char *dest, const char *src, size_t n){
+    //Inicialización temporal (para ver que funciona bien)
+        char *dest= {"holasoygermanjuasjuastomato"}; //Borrar
+        char *src = {"TextoEjemplo"}; //Borrar
+        size_t n = 10; //Borrar
+
+        //Inicializamos una variable auxiliar que nos permitirá modificar
+        //el contenido de dest. Lo inicializamos con \0
+        char auxDest[strlen(dest)];
+        
+        for(int idx=0; idx<sizeof(auxDest); idx++) {
+            auxDest[idx] = '\0';
+        }
+        
+        
+        char *auxInic=src;
+        
+        for(int idx=0;idx<n;idx++){
+          auxDest[idx] = *auxInic;
+          auxInic++;
+        }
+        
+        dest=auxDest;
+        printf("Destino: %s\n", dest); //Borrar. Comprueba el resultado
+}
