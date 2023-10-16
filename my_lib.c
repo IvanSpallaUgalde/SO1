@@ -80,34 +80,36 @@ char *my_strchr(const char *str, int c){
 }
 
 char *my_strncpy(char *dest, const char *src, size_t n){
-   #include <stdio.h>
-#include <string.h>
 
-
-int main() {
-        //Inicialización temporal (para ver que funciona bien)
-        char *dest= {"holasoygermanjuasjuastomato"}; //Borrar
-        char *src = {"TextoEjemplo"}; //Borrar
-        size_t n = 10; //Borrar
-
-        //Inicializamos una variable auxiliar que nos permitirá modificar
-        //el contenido de dest. Lo inicializamos con "null"
-        char *auxDest = (char *)malloc(5 * sizeof(char));
-        
-        for(int idx=0; idx<sizeof(auxDest); idx++) {
-            auxDest[idx] = '\0';
-        }
-    
-        
-        char *auxInic=src;
-        
-        for(int idx=0;idx<n;idx++){
-          auxDest[idx] = *auxInic;
-          auxInic++;
-        }
-        
-        dest=auxDest;
-        printf("Destino: %s\n", dest); //Borrar. Comprueba el resultado
-        return 0;
+    int tamany = 0; //Tamaño del destino
+    while (dest[tamany] != '\0') { //Iteramos hasta encontrar el null para saber cuantos valores hay
+        tamany++;
     }
+    tamany++; //Sumamos 1 para incluir la posición cuyo valor es null y, así, no perder 1 char de información
+
+
+    //Inicializamos una variable auxiliar dinámica que nos permitirá operar tranquilamente sin modificar aún el contenido del destino
+    char *auxDest = (char *)malloc(tamany * sizeof(char));
+    
+    for(int idx=0; idx<tamany; idx++) { //La inicializamos con nulls
+        auxDest[idx] = '\0';
+    }
+
+
+    char *auxInic=src; //Para no modificar el valor de la fuente
+
+    for(int idx=0; idx<n; idx++) {
+        if(auxInic=="\0") {
+            //Si hemos llegado ya al null, no escribimos nada más
+            
+        } else if(idx>=tamany-1) { //tamany-1 porque el último valor debe ser null
+            //Si se intenan escribir más valores de los que caben en
+            //el destino, se para de escribir
+            
+        } else {
+            auxDest[idx] = *auxInic;
+            auxInic++;
+        }
+    }
+    dest=auxDest; //Hacemos que el destino apunte al nuevo string
 }
