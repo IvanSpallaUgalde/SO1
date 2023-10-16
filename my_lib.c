@@ -80,34 +80,33 @@ char *my_strchr(const char *str, int c){
 }
 
 char *my_strncpy(char *dest, const char *src, size_t n){
-
-    int tamany = 0; //Tamaño del destino
-    while (dest[tamany] != '\0') { //Iteramos hasta encontrar el null para saber cuantos valores hay
+    //Tamaño del destino
+    int tamany = 0;
+    while (dest[tamany] != '\0') {
         tamany++;
     }
     tamany++; //Sumamos 1 para incluir la posición cuyo valor es null y, así, no perder 1 char de información
 
 
-    //Inicializamos una variable auxiliar dinámica que nos permitirá operar tranquilamente sin modificar aún el contenido del destino
+    //Inicializamos una variable auxiliar dinámica que nos permitirá modificar el contenido del destino
     char *auxDest = (char *)malloc(tamany * sizeof(char));
-    
     for(int idx=0; idx<tamany; idx++) { //La inicializamos con nulls
         auxDest[idx] = '\0';
     }
 
-
     char *auxInic=src; //Para no modificar el valor de la fuente
 
+    
+    //Inicializamos el bucle que nos permitirá copiar los valores de src en dest
     for(int idx=0; idx<n; idx++) {
-        if(auxInic=="\0") {
+        if(strcmp(auxInic, "\0") == 0) {
             //Si hemos llegado ya al null, no escribimos nada más
             
         } else if(idx>=tamany-1) { //tamany-1 porque el último valor debe ser null
-            //Si se intenan escribir más valores de los que caben en
-            //el destino, se para de escribir
+            //Si se intenan escribir más valores de los que caben en el destino, se para de escribir
             
         } else {
-            auxDest[idx] = *auxInic;
+            auxDest[idx] = *auxInic; //Se copia el valor[idx] de src en dest
             auxInic++;
         }
     }
