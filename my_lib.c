@@ -79,15 +79,15 @@ char *my_strchr(const char *str, int c){
     
 }
 
-char *my_strcpy(char *dest, const char *src){/////////////////////////////////////////////////////////////////////////////////////////
-    int c = 0;
-    for (int i = 0; src[i]; i++, c++)
+char *my_strcpy(char *dest, const char *src){
+    int idx = 0;
+    for (int temp = 0; src[temp]; temp++, idx++)
     {
-        dest[c] = src[c];
+        dest[idx] = src[idx];
     }
-    dest[c] = '\0';
+    dest[idx] = '\0';
     return dest;
-}////////////////////////////////////////////////////////////////////////////////////////////////////////
+}
 
 
 char *my_strncpy(char *dest, const char *src, size_t n){
