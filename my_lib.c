@@ -62,21 +62,19 @@ char *my_strcat(char *dest, const char *str){
     return (char *)dest;
 }
 
-char *my_strchr(const char *str, int c){
-    
+
+char *my_strchr(const char *str, int c){  
     //Mientras str =! 0
-    while (*str)
-    {
-        if (*str == c)
-        {
+    while (*str){
+        
+        if (*str == c){
             //Casting y return del caracter de str
             return (char *)str;
-        }
-        
+        }     
         //Siguiente caracter de la cadena str
         str++;
     }
-    
+    return 0;
 }
 
 char *my_strcpy(char *dest, const char *src){
@@ -90,40 +88,41 @@ char *my_strcpy(char *dest, const char *src){
 }
 
 
-char *my_strncpy(char *dest, const char *src, size_t n){
-    //Tamaño del destino
-    int tamany = 0;
-    while (dest[tamany] != '\0') {
-        tamany++;
-    }
-    tamany++; //Sumamos 1 para incluir la posición cuyo valor es null y, así, no perder 1 char de información
-
-
-    //Inicializamos una variable auxiliar dinámica que nos permitirá modificar el contenido del destino
-    char *auxDest = (char *)malloc(tamany * sizeof(char));
-    for(int idx=0; idx<tamany; idx++) { //La inicializamos con nulls
-        auxDest[idx] = '\0';
-    }
-
-    char *auxInic=src; //Para no modificar el valor de la fuente
-
-    
-    //Inicializamos el bucle que nos permitirá copiar los valores de src en dest
-    for(int idx=0; idx<n; idx++) {
-        if(strcmp(auxInic, "\0") == 0) {
-            //Si hemos llegado ya al null, no escribimos nada más
-            
-        } else if(idx>=tamany-1) { //tamany-1 porque el último valor debe ser null
-            //Si se intenan escribir más valores de los que caben en el destino, se para de escribir
-            
-        } else {
-            auxDest[idx] = *auxInic; //Se copia el valor[idx] de src en dest
-            auxInic++;
+char *my_strncpy(char *dest, const char *src, size_t n)
+{
+    char *paux = dest;
+    int len = my_strlen(src);
+    if (n <= len)
+    { //Copiamos n caracteres sin '\0'
+        while (n)
+        {
+            *paux = *src;
+            paux++;
+            src++;
+            n--;
         }
     }
-    dest=auxDest; //Hacemos que el destino apunte al nuevo string
+    else
+    { //Copiamos todos los carácteres y rellenamos con '\0'
+        int resto = n - (len + 1);
+        while (len)
+        {
+            *paux = *src;
+            paux++;
+            src++;
+            len--;
+        }
+        //Una vez copiados los carácteres añadimos '\0'
+        *paux = '\0';
+        while (resto)
+        {
+            paux++;
+            resto--;
+            *paux = '\0';
+        }
+    }
+    return dest;
 }
-
 
 /*
 Reserva espacio para una variable de tipo struct my_stack, que contendrá el puntero al nodo 
