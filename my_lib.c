@@ -79,6 +79,11 @@ char *my_strchr(const char *str, int c){
     
 }
 
+char *my_strcpy(char *dest, const char *src){ //Veimar!!!
+    
+}
+
+
 char *my_strncpy(char *dest, const char *src, size_t n){
     //Tamaño del destino
     int tamany = 0;
@@ -111,4 +116,34 @@ char *my_strncpy(char *dest, const char *src, size_t n){
         }
     }
     dest=auxDest; //Hacemos que el destino apunte al nuevo string
+}
+
+
+struct my_stack *my_stack_init (int size){
+    
+}
+
+
+int my_stack_push (struct my_stack *stack, void *data){
+
+}
+
+void *my_stack_pop (struct my_stack *stack){
+
+}
+
+int my_stack_len (struct my_stack *stack){
+
+}
+
+int my_stack_purge (struct my_stack *stack){
+
+}
+
+int my_stack_write (struct my_stack *stack, char *filename){
+
+}
+
+struct my_stack *my_stack_read (char *filename){
+
 }
