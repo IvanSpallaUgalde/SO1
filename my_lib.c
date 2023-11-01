@@ -2,64 +2,56 @@
 #include <stdlib.h>
 
 size_t my_strlen(const char *str){
+    int idx = 0; //Índice con el que recorremos el string
     size_t len = 0;
-    int i = 0;
 
-    while (str[i])
-    {
-        i++;
+    while (str[idx]){ //Mientras el string en la posición idx sea diferente a /0, entramos
+        idx++; //Avanzamos al siguiente
         len++;
     }
     return len;
 }
 
 int my_strcmp(const char *str1, const char *str2){
-    int i = 0;
-    int j = 0;
+    int idx1 = 0;
+    int idx2 = 0;
 
-    while (str1[i] && (str1[i] == str2[j]))
-    {
-        i++;
-        j++;
+    while (str1[idx1] && (str1[idx1] == str2[idx2])){
+        idx1++;
+        idx2++;
     }
-    return (str1[i] - str2[j]);
+    return (str1[idx1] - str2[idx2]);
 }
 
 char *my_strcat(char *dest, const char *str){
+    int contador = 0;
+    
+    size_t tam = sizeof(char) * (my_strlen(str) + my_strlen(dest) + 1); //Tamaño = tamaño string, carácteres del destino y carácter nulo
+    char *puntero = (char *)malloc(tam); //Creamos un puntero del tamaño que acabamos de definir
 
-    //Tamaño es igual al num de char de str + num de char de dest + 1 (caracter nulo)
-    size_t tam = sizeof(char) * (my_strlen(str) + my_strlen(dest) + 1);
-    int i = 0; //Contador
-
-    char *a = (char *)malloc(tam);
-
-    while (*dest)
-    {
-        *a = *dest;
-        dest++;
-        a++;
-        i++;
+    while (*dest){
+        contador++; //Incrementamos el contador en 1
+        *puntero = *dest; //Copiamos a lo que apunta el destino en lo que apunta el puntero
+        puntero++; //Pasamos a la siguiente posición de la pila
+        dest++;  //Pasamos a la siguiente posición del destino
     }
 
-    while (*str)
-    {
-        *a = *str;
+    while (*str){ //Al igual que antes, incrementamos las variables en 1 y copiamos lo de str en el puntero
+        contador++;
+        *puntero = *str;
+        puntero++;
         str++;
-        a++;
-        i++;
     }
     
-    *a = '\0';
+    *puntero = '\0'; //Copiamos el caracter nulo al final del puntero
     
-    while (i > 0)
-    {
-        a--;
-        i--;
+    while (contador > 0){ //Ponemos el puntero de vuelta a su posicón original para devolverlo entero
+        contador--;
+        puntero--;
     }
-
-    dest = a;
-
-    return (char *)dest;
+    
+    dest = puntero;
+    return (char *)dest;  //Devolvemos puntero dest
 }
 
 
@@ -78,47 +70,42 @@ char *my_strchr(const char *str, int c){
 }
 
 char *my_strcpy(char *dest, const char *src){
-    int idx = 0;
-    for (int temp = 0; src[temp]; temp++, idx++)
-    {
-        dest[idx] = src[idx];
+    int idx = 0; //Índice que declaramos fuera del for para poder introducir el carácter nulo al final
+    for (int temp = 0; src[temp]; temp++, idx++){
+        dest[idx] = src[idx]; //Copiamos toda la src en el destino
     }
-    dest[idx] = '\0';
-    return dest;
+    dest[idx] = '\0'; //Carácter nulo
+    return dest; //Devolvemos el destino que contiene todo el source copiado
 }
 
 
-char *my_strncpy(char *dest, const char *src, size_t n)
-{
-    char *paux = dest;
-    int len = my_strlen(src);
-    if (n <= len)
-    { //Copiamos n caracteres sin '\0'
-        while (n)
-        {
-            *paux = *src;
-            paux++;
-            src++;
-            n--;
+char *my_strncpy(char *dest, const char *src, size_t n){
+    
+    int len = my_strlen(src); //Longitud del source
+    char *pilAux = dest;
+    
+    if (n <= len){ //Copiamos n caracteres si n es menor a la longitud de la source
+        while (n){ 
+            *pilAux = *src; //Copiamos el contenido apuntado por source en el contenido apuntado por la pila auxiliar
+            n--; //Reducimos la cantidad de carácteres que quedan por copiar en 1
+            pilAux++; //Movemos donde apunta la pila 
+            src++;    //Movemos donde apunta el source
         }
     }
-    else
-    { //Copiamos todos los carácteres y rellenamos con '\0'
-        int resto = n - (len + 1);
-        while (len)
-        {
-            *paux = *src;
-            paux++;
-            src++;
+    else{
+        int exceso = n - (len + 1); //Canitdad de carácteres que "nos sobran" y tenemos que rellenar con "\0"
+        while (len){ //De mientras la longitud no sea 0, operamos
             len--;
+            *pilAux = *src;
+            pilAux++;
+            src++;
         }
-        //Una vez copiados los carácteres añadimos '\0'
-        *paux = '\0';
-        while (resto)
-        {
-            paux++;
-            resto--;
-            *paux = '\0';
+        
+        *pilAux = '\0'; //Metemos el carácter nulo
+        while (exceso){ //Metemos el carácter nulo en las posiciones restantes
+            exceso--;
+            pilAux++;
+            *pilAux = '\0';
         }
     }
     return dest;
