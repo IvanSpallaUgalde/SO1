@@ -129,9 +129,9 @@ int my_stack_push(struct my_stack *stack, void *data){
     
     int solucion = -1; //Valor de retorno de la función
     
-    if (stack){ //Si la pila está inicializada, operamos
-        if (stack->size > 0){
-            struct my_stack_node *nodoNuevo = malloc(sizeof(nodoNuevo)); //Creamos el nuevo nodo
+    if (stack){ //Si la pila pasada por parámetro está inicializada, operamos
+        if (stack.size > 0){
+            struct my_stack_node *nodoNuevo = malloc(stack.size); //Creamos el nuevo nodo de tamaño de los datos de la pila pasada por parámetro
             
             if (nodoNuevo == NULL){ //Si el nodo vale null, devolvemos un error
                 fprintf(stderr, "No hay espacio en memoria dinámica disponible en este momento.\n"); 
@@ -139,9 +139,9 @@ int my_stack_push(struct my_stack *stack, void *data){
             }
 
             solucion = 0;
-            nodoNuevo->data = data; //Metemos los datos donde toca
-            nodoNuevo->next = stack->top; //El siguiente elemento es el top actual
-            stack->top = nodoNuevo;  //Y ponemos el nuevo nodo en el top
+            nodoNuevo.data = data; //Metemos los datos donde toca
+            nodoNuevo.next = stack.top; //El siguiente elemento es el top actual
+            stack.top = nodoNuevo;  //Y ponemos el nuevo nodo en el top
         }
     }
     return solucion;
