@@ -147,73 +147,52 @@ int my_stack_push(struct my_stack *stack, void *data){
     return solucion;
 }
 
-/*
-Elimina el nodo superior de los elementos de la pila (y libera la memoria que ocupaba ese nodo!).
-Devuelve el puntero a los datos del elemento eliminado. 
 
-Si no existe nodo superior (pila vacía), retorna NULL.
-*/
-void *my_stack_pop(struct my_stack *stack)
-{
-    if (stack->top)
-    {
-        //Creamos un nodo temporal
-        struct my_stack_node *temp_node = stack->top;
+void *my_stack_pop(struct my_stack *stack){
+    if (stack.top){ //Si existe el top, operamos
+        
+        struct my_stack_node *nodAux = stack.top; //Creamos un nodo auxiliar que nos permitirá acabar eliminando el top actual
 
-        //Copiamos los datos que a continuación se eliminarán
-        void *datos = temp_node->data;
+        void *datos = nodAux.data; //Guardamos los datos en una variable para devolverlos
 
-        //Asignamos el nuevo "top" del stack y así "borramos" el primer nodo
-        stack->top = temp_node->next;
-
-        free(temp_node);
+        stack.top = nodAux.next; //Hacemos que el top sea ahora el siguiente nodo
+        free(nodAux); //Eliminamos el nodo que se encontraba anteriormente en el top
+        
         return datos;
-    }
-    else
-    {
-        return NULL;
+}
+    else{
+        return NULL; //Si el top no existe, devolvemos null
     }
 }
 
-/*
-Recorre la pila y retorna el número de nodos totales que hay en los elementos de la pila.
-*/
-int my_stack_len(struct my_stack *stack)
-{
-    //Contador de nodos
-    int i = 0;
-    struct my_stack_node *temp_node = stack->top;
 
-    //Recorrido hasta el final de la pila y aumentamos el i
-    while (temp_node)
-    {
-        temp_node = temp_node->next;
-        i++;
+int my_stack_len(struct my_stack *stack){
+
+    int cantNod = 0;
+    struct my_stack_node *nodAux = stack.top; //Copiamos la pila desde el top en una pila auxiliar
+    
+    while (temp_node){ //Bucle para recorrer toda la pila
+        nodAux = nodAux.next; //Pasamos al siguiente nodo
+        cantNod++; //+1 nodo encontrado
     }
-    return i;
+    
+    return cantNod;
 }
 
-/*
-Recorre la pila liberando la memoria que habíamos reservado para cada uno de los datos 
-(data) y la de cada nodo. Finalmente libera también la memoria que ocupa la pila. Es decir, 
-toda la memoria que se reservó con malloc() en algún momento, se libera con la función free(). 
 
-Devuelve el número de bytes liberados.
-*/
-int my_stack_purge(struct my_stack *stack)
-{
+int my_stack_purge(struct my_stack *stack){
+    
     int bytes = sizeof(struct my_stack); //Bytes de la pila
 
-    //Recorrido por toda la pila
-    while (stack->top)
-    {
-        bytes += sizeof(struct my_stack_node); //Bytes de cada nodo
-        bytes += stack->size;                  //Bytes de los datos
-        free(my_stack_pop(stack));             //my_stack_pop retorna la posición de los datos
-                                               //que eliminamos de la pila
+    while (stack.top){ //Recorremos toda la pila
+        bytes = bytes + sizeof(struct my_stack_node); //Sumamos los bytes que ocupa un solo nodo (cada vez que iteramos)
+        bytes = bytes + stack.size;                   //Sumamos los bytes que ocupa 1 solo dato de un nodo (en cada iteración)
+        free(my_stack_pop(stack));                    //Eliminamos el top actual de la pila
     }
+    
+    bytes = bytes + sizeof(struct my_stack);    //Acabamos sumando lo que ocupa la propia pila como tal
 
-    free(stack); //Liberamos toda la pila
+    free(stack);               //Eliminamos la propia pila
     return bytes;
 }
 
