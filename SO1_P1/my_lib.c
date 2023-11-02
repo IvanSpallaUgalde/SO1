@@ -196,52 +196,42 @@ int my_stack_purge(struct my_stack *stack){
     return cantByt;
 }
 
+int bytesWrite(struct my_stack_node *node, int fichero, int size){ //Se utiliza en my_stack_write
+    int bytes = 0;
+    if (node.next){ //Si el nodo tiene siguiente, iteramos
+        bytes = bytesWrite(node.next, fichero, size); //Si tiene siguiente, volvemos a llamar a la función hasta llegar al último
+    }
 
+    return write(fichero, node.data, size) + bytes; //Una vez llegado al último nodo(realmente el primero), este se escribe y se devuleven la cantidad de bytes. El
+                                                    //proceso se repite consecutivamente hasta llegar al TOS (Top Of Stack)
+}
 
 int my_stack_write(struct my_stack *stack, char *filename){
-    int cantByt = -1;                         //Valor inicial -1 para gestionar errores
-    struct my_stack_node *nodAux = stack.top; //Nos permitirá recorrer la pila para ir escribiéndola
     
+    int cantByt = -1;                         //Valor inicial -1 para gestionar errores    
     int fichero = open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR); //Se abre/crea el fichero sobre el que realizaremos todo el proceso
 
     if (fichero < 0){ //Comprobamos que el fichero se haya creado
         fprintf(stderr, "No ha sido posible abrir o crear el fichero\n");
         return cantByt;
     }
-/////////////////////////////////////////////
-    while(nodAux){ //Bucle que recorre toda la pila
-        cantByt = write(fichero, nodAux.data, size) + cantByt; //Escribimos el contenido de la pila y sumamos los bytes escritos al contador de de bytes
-        nodAux = nodAux.next; //Pasamos al siguiete nodo
-    }
-////////////////////////////////////
+                                                      
+    bytes = bytesWrite(stack.top, fichero, stack.size);     //Utilizamos una función auxiliar para escribir la pila recursivamente
+    
     if (cantByt == -1){ //Comprobamos si se han producido errores al escribir
-        fprintf(stderr, "Error al escribir en el archivo\n");
+        fprintf(stderr, "Ha ocurrido un error al escribir en el archivo\n");
         return cantByt;
     }
 
-    if (close(fichero) == -1){ //Cerramos el fichero y controlamos el error de cerrar el fichero
+    if (close(fichero) == -1){ //Cerramos el fichero y controlamos un posible error al cerrar el fichero
         fprintf(stderr, "Error al cerrar el fichero\n");
         return -1;
     }
     
-    return cantByt / stack.size;
+    return cantByt / stack.size; //Devolvemos la cantidad de elementos
 }
 
-int bytesWrite(struct my_stack_node *node, int fichero, int size){ //Se utiliza en my_stack_write
-    // Inicializa a 0 i mira si no es el último nodo
-    int bytes = 0;
-    if (node.next){
-        // Llama de nuevo a la funcion con el nodo como entrada
-        bytes = bytesWrite(node.next, fichero, size);
-    }
 
-    // Escribe el nodo en el fichero y devuelve los bytes escritos
-    return write(fichero, node.data, size) + bytes;
-}
-
-/*
-Lee los datos de la pila almacenados en el fichero indicado por "filename"
-*/
 struct my_stack *my_stack_read(char *filename){
     int size;
     struct my_stack *stack;
