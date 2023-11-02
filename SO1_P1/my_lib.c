@@ -233,36 +233,35 @@ int my_stack_write(struct my_stack *stack, char *filename){
 
 
 struct my_stack *my_stack_read(char *filename){
-    int size;
-    struct my_stack *stack;
-    void *data;
+    ////////////////Queda reordenar las declaraciones en todo el método y acabar los comentarios///////////////////////////////////////////
+    int tamany;
+    struct my_stack *pila;   //Pila que contendrá la información del fichero
+    void *datos;
 
-    // Creamos el enlace al fichero
-    int fichero = open(filename, O_RDONLY);
+    int fichero = open(filename, O_RDONLY);    //Abrimos el fichero en modo lectura
 
-    // Control de errores
-    if (fichero < 0){
+    if (fichero < 0){ //Comprobamos si el fichero se ha abierto correctamente
         fprintf(stderr, "Error al abrir el fichero\n");
         return NULL;
     }
 
     // Cogemos el tamaño del data del fichero
-    read(fichero, &size, sizeof(int));
+    read(fichero, &tamany, sizeof(int));
 
     // Inicializamos el stack (usando init) y reservamos tamaño para el data
-    stack = my_stack_init(size);
-    data = malloc(size);
-    if (data == NULL){
+    pila = my_stack_init(tamany);
+    datos = malloc(tamany);
+    if (datos == NULL){
         fprintf(stderr, "No hay espacio en memoria dinámica disponible en este momento.\n");
         return NULL;
     }
 
     //Bucle para restaurar los nodos
-    while (read(fichero, data, size) > 0){
+    while (read(fichero, datos, tamany) > 0){
         //Reservamos memoria para el data
-        my_stack_push(stack, data);
-        data = malloc(size);
-        if (data == NULL){
+        my_stack_push(pila, datos);
+        datos = malloc(tamany);
+        if (datos == NULL){
             fprintf(stderr, "No hay espacio en memoria dinámica disponible en este momento.\n");
             return NULL;
         }
@@ -272,6 +271,6 @@ struct my_stack *my_stack_read(char *filename){
         fprintf(stderr, "Error al cerrar el fichero\n");
     }
 
-    free(data);
-    return stack;
+    free(datos);
+    return pila;
 }
