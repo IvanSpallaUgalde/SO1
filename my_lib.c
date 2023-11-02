@@ -196,66 +196,56 @@ int my_stack_purge(struct my_stack *stack){
     return bytes;
 }
 
-/*
-Función auxiliar del write
-*/
-int aux_my_stack_write(struct my_stack_node *node, int fichero, int size)
-{
-    // Inicializa a 0 i mira si no es el último nodo
-    int bytes = 0;
-    if (node->next)
-    {
-        // Llama de nuevo a la funcion con el nodo como entrada
-        bytes = aux_my_stack_write(node->next, fichero, size);
-    }
-
-    // Escribe el nodo en el fichero y devuelve los bytes escritos
-    return write(fichero, node->data, size) + bytes;
-}
 
 /*
 Almacena los datos de la pila en el fichero indicado por "filename"
 */
-int my_stack_write(struct my_stack *stack, char *filename)
-{
+int my_stack_write(struct my_stack *stack, char *filename){
     int bytes = -1;
     // Creamos el enlace al fichero
     int fichero = open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
     //Control de error de open
-    if (fichero < 0)
-    {
+    if (fichero < 0){
         fprintf(stderr, "Error al abrir el fichero\n");
         return bytes;
     }
 
-    bytes = write(fichero, &stack->size, sizeof(stack->size)); //write(fichero, dato a escribir, tamaño del tado)
+    bytes = write(fichero, &stack.size, sizeof(stack.size)); //write(fichero, dato a escribir, tamaño del tado)
                                                                //y nos devuelve los bytes escritos
-    bytes = aux_my_stack_write(stack->top, fichero, stack->size);
+    bytes = bytesWrite(stack.top, fichero, stack.size);
 
     // Cerramos el enlace al fichero y devolvemos el número de datos escritos, con control de errores
-    if (close(fichero) == -1)
-    {
+    if (close(fichero) == -1){
         fprintf(stderr, "Error al cerrar el fichero\n");
         return -1;
     }
     //Control de errores al escribir
-    if (bytes == -1)
-    {
+    if (bytes == -1){
         fprintf(stderr, "Error al escribir en el archivo\n");
         return bytes;
     }
-    else
-    {
-        return bytes / stack->size;
+    else{
+        return bytes / stack.size;
     }
+}
+
+int bytesWrite(struct my_stack_node *node, int fichero, int size){
+    // Inicializa a 0 i mira si no es el último nodo
+    int bytes = 0;
+    if (node.next){
+        // Llama de nuevo a la funcion con el nodo como entrada
+        bytes = bytesWrite(node.next, fichero, size);
+    }
+
+    // Escribe el nodo en el fichero y devuelve los bytes escritos
+    return write(fichero, node.data, size) + bytes;
 }
 
 /*
 Lee los datos de la pila almacenados en el fichero indicado por "filename"
 */
-struct my_stack *my_stack_read(char *filename)
-{
+struct my_stack *my_stack_read(char *filename){
     int size;
     struct my_stack *stack;
     void *data;
@@ -264,8 +254,7 @@ struct my_stack *my_stack_read(char *filename)
     int fichero = open(filename, O_RDONLY);
 
     // Control de errores
-    if (fichero < 0)
-    {
+    if (fichero < 0){
         fprintf(stderr, "Error al abrir el fichero\n");
         return NULL;
     }
@@ -276,27 +265,23 @@ struct my_stack *my_stack_read(char *filename)
     // Inicializamos el stack (usando init) y reservamos tamaño para el data
     stack = my_stack_init(size);
     data = malloc(size);
-    if (data == NULL)
-    {
+    if (data == NULL){
         fprintf(stderr, "No hay espacio en memoria dinámica disponible en este momento.\n");
         return NULL;
     }
 
     //Bucle para restaurar los nodos
-    while (read(fichero, data, size) > 0)
-    {
+    while (read(fichero, data, size) > 0){
         //Reservamos memoria para el data
         my_stack_push(stack, data);
         data = malloc(size);
-        if (data == NULL)
-        {
+        if (data == NULL){
             fprintf(stderr, "No hay espacio en memoria dinámica disponible en este momento.\n");
             return NULL;
         }
     }
     //Cerramos el enlace con el fichero
-    if (close(fichero) < 0)
-    {
+    if (close(fichero) < 0){
         fprintf(stderr, "Error al cerrar el fichero\n");
     }
 
