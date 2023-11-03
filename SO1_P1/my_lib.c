@@ -258,22 +258,21 @@ struct my_stack *my_stack_read(char *filename){
     pila = my_stack_init(tamany);  //Inicializamos la pila con el tamaño leído
     
 
-    //Bucle para restaurar los nodos  //Borrar aquesta línea després
-    while (read(fichero, datos, tamany) > 0){ //De mientras se pueda leer un elemento, iteramos
-        //Con el read de la condicón del while, almacenamos en datos el próximo nodo
-        //Reservamos memoria para el data  //Borrar después
+    while (read(fichero, datos, tamany) > 0){ //De mientras se pueda leer un elemento, iteramos. Metemos en datos el próximo nodo
+
         my_stack_push(pila, datos); //Metemos en la pila de lectura los datos que acabamos de leer
         datos = malloc(tamany);     //Reiniciamos el valor de los datos para volver a leer
-        if (datos == NULL){
-            fprintf(stderr, "No hay espacio en memoria dinámica disponible en este momento.\n");
+        
+        if (datos == NULL){ //Comprobamos si se ha podido reservar memoria para los datos
+            fprintf(stderr, "\nError al reservar memoria para los datos.");
             return NULL;
         }
     }
-    //Cerramos el enlace con el fichero
-    if (close(fichero) < 0){
-        fprintf(stderr, "Error al cerrar el fichero\n");
+    
+    if (close(fichero) < 0){ //Cerramos el fichero
+        fprintf(stderr, "\nError al cerrar el fichero");
     }
 
-    free(datos);
-    return pila;
+    free(datos); //Liberamos la memoria reservada para la pila de datos
+    return pila; //Devolvemos la pila con el contenido del fichero
 }
