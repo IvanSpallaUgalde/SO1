@@ -115,12 +115,12 @@ char *my_strncpy(char *dest, const char *src, size_t n){
 struct my_stack *my_stack_init(int size){
     struct my_stack *pila = malloc(sizeof(struct my_stack)); //Creamos la pila que devolveremos 
     
-    if (stack == NULL){ //Detectamos si ha habido un error (gestión de errores)
+    if (pila == NULL){ //Detectamos si ha habido un error (gestión de errores)
         fprintf(stderr, "\nError al reservar memoria para la nueva pila.");
         return NULL;
     }
-    pila.size = size; //Declaramos el tamaño de la pila con el size pasado por parámetro
-    pila.top = NULL;  //Ponemos el top a null
+    pila->size = size; //Declaramos el tamaño de la pila con el size pasado por parámetro
+    pila->top = NULL;  //Ponemos el top a null
     return pila;
 }
 
@@ -130,8 +130,8 @@ int my_stack_push(struct my_stack *stack, void *data){
     int solucion = -1; //Valor de retorno de la función
     
     if (stack){ //Si la pila pasada por parámetro está inicializada, operamos
-        if (stack.size > 0){
-            struct my_stack_node *nodoNuevo = malloc(stack.size); //Creamos el nuevo nodo de tamaño de los datos de la pila pasada por parámetro
+        if (stack->size > 0){
+            struct my_stack_node *nodoNuevo = malloc(stack->size); //Creamos el nuevo nodo de tamaño de los datos de la pila pasada por parámetro
             
             if (nodoNuevo == NULL){ //Si el nodo vale null, devolvemos un error
                 fprintf(stderr, "\nError al crear el nuevo nodo"); 
@@ -139,9 +139,9 @@ int my_stack_push(struct my_stack *stack, void *data){
             }
 
             solucion = 0;
-            nodoNuevo.data = data; //Metemos los datos donde toca
-            nodoNuevo.next = stack.top; //El siguiente elemento es el top actual
-            stack.top = nodoNuevo;  //Y ponemos el nuevo nodo en el top
+            nodoNuevo->data = data; //Metemos los datos donde toca
+            nodoNuevo->next = stack->top; //El siguiente elemento es el top actual
+            stack->top = nodoNuevo;  //Y ponemos el nuevo nodo en el top
         }
     }
     return solucion;
@@ -149,13 +149,13 @@ int my_stack_push(struct my_stack *stack, void *data){
 
 
 void *my_stack_pop(struct my_stack *stack){
-    if (stack.top){ //Si existe el top, operamos
+    if (stack->top){ //Si existe el top, operamos
         
-        struct my_stack_node *nodAux = stack.top; //Creamos un nodo auxiliar que nos permitirá acabar eliminando el top actual
+        struct my_stack_node *nodAux = stack->top; //Creamos un nodo auxiliar que nos permitirá acabar eliminando el top actual
 
-        void *datos = nodAux.data; //Guardamos los datos en una variable para devolverlos
+        void *datos = nodAux->data; //Guardamos los datos en una variable para devolverlos
 
-        stack.top = nodAux.next; //Hacemos que el top sea ahora el siguiente nodo
+        stack->top = nodAux->next; //Hacemos que el top sea ahora el siguiente nodo
         free(nodAux); //Eliminamos el nodo que se encontraba anteriormente en el top
         
         return datos;
@@ -169,10 +169,10 @@ void *my_stack_pop(struct my_stack *stack){
 int my_stack_len(struct my_stack *stack){
 
     int cantNod = 0;
-    struct my_stack_node *nodAux = stack.top; //Copiamos la pila desde el top en una pila auxiliar
+    struct my_stack_node *nodAux = stack->top; //Copiamos la pila desde el top en una pila auxiliar
     
     while (nodAux){ //Bucle para recorrer toda la pila
-        nodAux = nodAux.next; //Pasamos al siguiente nodo
+        nodAux = nodAux->next; //Pasamos al siguiente nodo
         cantNod++; //+1 nodo encontrado
     }
     
@@ -184,9 +184,9 @@ int my_stack_purge(struct my_stack *stack){
     
     int cantByt = sizeof(struct my_stack); //Bytes de la pila
 
-    while (stack.top){ //Recorremos toda la pila
+    while (stack->top){ //Recorremos toda la pila
         cantByt = cantByt + sizeof(struct my_stack_node); //Sumamos los bytes que ocupa un solo nodo (cada vez que iteramos)
-        cantByt = cantByt + stack.size;                   //Sumamos los bytes que ocupa 1 solo dato de un nodo (en cada iteración)
+        cantByt = cantByt + stack->size;                   //Sumamos los bytes que ocupa 1 solo dato de un nodo (en cada iteración)
         free(my_stack_pop(stack));                        //Eliminamos el top actual de la pila
     }
     
@@ -198,11 +198,11 @@ int my_stack_purge(struct my_stack *stack){
 
 int bytesWrite(struct my_stack_node *node, int fichero, int size){ //Se utiliza en my_stack_write
     int bytes = 0;
-    if (node.next){ //Si el nodo tiene siguiente, iteramos
-        bytes = bytesWrite(node.next, fichero, size); //Si tiene siguiente, volvemos a llamar a la función hasta llegar al último
+    if (node->next){ //Si el nodo tiene siguiente, iteramos
+        bytes = bytesWrite(node->next, fichero, size); //Si tiene siguiente, volvemos a llamar a la función hasta llegar al último
     }
 
-    return write(fichero, node.data, size) + bytes; //Una vez llegado al último nodo(realmente el primero), este se escribe y se devuleven la cantidad de bytes. El
+    return write(fichero, node->data, size) + bytes; //Una vez llegado al último nodo(realmente el primero), este se escribe y se devuleven la cantidad de bytes. El
                                                     //proceso se repite consecutivamente hasta llegar al TOS (Top Of Stack)
 }
 
@@ -216,8 +216,8 @@ int my_stack_write(struct my_stack *stack, char *filename){
         return cantByt;
     }
 
-    bytes = write(fichero, &stack.size, sizeof(stack.size));    //Escribimos el tamaño de la pila como primer elemento del fichero (para poder leerlo en caso de ser necesario)
-    bytes = bytesWrite(stack.top, fichero, stack.size);         //Utilizamos una función auxiliar para escribir la pila recursivamente
+    cantByt = write(fichero, &stack->size, sizeof(stack->size));    //Escribimos el tamaño de la pila como primer elemento del fichero (para poder leerlo en caso de ser necesario)
+    cantByt = bytesWrite(stack->top, fichero, stack->size);         //Utilizamos una función auxiliar para escribir la pila recursivamente
     
     if (cantByt == -1){ //Comprobamos si se han producido errores al escribir
         fprintf(stderr, "\nHa ocurrido un error al escribir en el archivo");
@@ -229,7 +229,7 @@ int my_stack_write(struct my_stack *stack, char *filename){
         return -1;
     }
     
-    return cantByt / stack.size; //Devolvemos la cantidad de elementos
+    return cantByt / stack->size; //Devolvemos la cantidad de elementos
 }
 
 
