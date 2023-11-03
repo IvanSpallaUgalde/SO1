@@ -116,11 +116,11 @@ struct my_stack *my_stack_init(int size){
     struct my_stack *pila = malloc(sizeof(struct my_stack)); //Creamos la pila que devolveremos 
     
     if (stack == NULL){ //Detectamos si ha habido un error (gestión de errores)
-        fprintf(stderr, "No hay espacio en memoria dinámica disponible en este momento.\n");
+        fprintf(stderr, "\nError al reservar memoria para la nueva pila.");
         return NULL;
     }
-    pila->size = size; //Declaramos el tamaño de la pila con el size pasado por parámetro
-    pila->top = NULL;  //Ponemos el top a null
+    pila.size = size; //Declaramos el tamaño de la pila con el size pasado por parámetro
+    pila.top = NULL;  //Ponemos el top a null
     return pila;
 }
 
@@ -134,7 +134,7 @@ int my_stack_push(struct my_stack *stack, void *data){
             struct my_stack_node *nodoNuevo = malloc(stack.size); //Creamos el nuevo nodo de tamaño de los datos de la pila pasada por parámetro
             
             if (nodoNuevo == NULL){ //Si el nodo vale null, devolvemos un error
-                fprintf(stderr, "No hay espacio en memoria dinámica disponible en este momento.\n"); 
+                fprintf(stderr, "\nError al crear el nuevo nodo"); 
                 return solucion; //Solución vale -1
             }
 
@@ -212,19 +212,20 @@ int my_stack_write(struct my_stack *stack, char *filename){
     int fichero = open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR); //Se abre/crea el fichero sobre el que realizaremos todo el proceso
 
     if (fichero < 0){ //Comprobamos que el fichero se haya creado
-        fprintf(stderr, "No ha sido posible abrir o crear el fichero\n");
+        fprintf(stderr, "\nNo ha sido posible abrir o crear el fichero");
         return cantByt;
     }
-                                                      
-    bytes = bytesWrite(stack.top, fichero, stack.size);     //Utilizamos una función auxiliar para escribir la pila recursivamente
+
+    bytes = write(fichero, &stack.size, sizeof(stack.size));    //Escribimos el tamaño de la pila como primer elemento del fichero (para poder leerlo en caso de ser necesario)
+    bytes = bytesWrite(stack.top, fichero, stack.size);         //Utilizamos una función auxiliar para escribir la pila recursivamente
     
     if (cantByt == -1){ //Comprobamos si se han producido errores al escribir
-        fprintf(stderr, "Ha ocurrido un error al escribir en el archivo\n");
+        fprintf(stderr, "\nHa ocurrido un error al escribir en el archivo");
         return cantByt;
     }
 
     if (close(fichero) == -1){ //Cerramos el fichero y controlamos un posible error al cerrar el fichero
-        fprintf(stderr, "Error al cerrar el fichero\n");
+        fprintf(stderr, "\nError al cerrar el fichero");
         return -1;
     }
     
@@ -233,34 +234,36 @@ int my_stack_write(struct my_stack *stack, char *filename){
 
 
 struct my_stack *my_stack_read(char *filename){
-    ////////////////Queda reordenar las declaraciones en todo el método y acabar los comentarios///////////////////////////////////////////
-    int tamany;
-    struct my_stack *pila;   //Pila que contendrá la información del fichero
+    
+    struct my_stack *pila;    //Pila que contendrá la información del fichero
+    int tamany;               //Tamaño de los elementos de la pila 
     void *datos;
 
     int fichero = open(filename, O_RDONLY);    //Abrimos el fichero en modo lectura
 
     if (fichero < 0){ //Comprobamos si el fichero se ha abierto correctamente
-        fprintf(stderr, "Error al abrir el fichero\n");
+        fprintf(stderr, "\nError al abrir el fichero");
         return NULL;
     }
 
-    // Cogemos el tamaño del data del fichero
-    read(fichero, &tamany, sizeof(int));
 
-    // Inicializamos el stack (usando init) y reservamos tamaño para el data
-    pila = my_stack_init(tamany);
-    datos = malloc(tamany);
-    if (datos == NULL){
-        fprintf(stderr, "No hay espacio en memoria dinámica disponible en este momento.\n");
+    read(fichero, &tamany, sizeof(int));  //Guardamos en tamany el tamaño de los elementos de la pila (se encuentra en el primer int porque así lo hemos decidido en el my_stack_write)
+    
+    datos = malloc(tamany);        //Reservamos memoria para los datos
+    if (datos == NULL){            //Comprobamos si se ha podido reservar memoria
+        fprintf(stderr, "\nError al reservar memoria para los datos.");
         return NULL;
     }
+    
+    pila = my_stack_init(tamany);  //Inicializamos la pila con el tamaño leído
+    
 
-    //Bucle para restaurar los nodos
-    while (read(fichero, datos, tamany) > 0){
-        //Reservamos memoria para el data
-        my_stack_push(pila, datos);
-        datos = malloc(tamany);
+    //Bucle para restaurar los nodos  //Borrar aquesta línea després
+    while (read(fichero, datos, tamany) > 0){ //De mientras se pueda leer un elemento, iteramos
+        //Con el read de la condicón del while, almacenamos en datos el próximo nodo
+        //Reservamos memoria para el data  //Borrar después
+        my_stack_push(pila, datos); //Metemos en la pila de lectura los datos que acabamos de leer
+        datos = malloc(tamany);     //Reiniciamos el valor de los datos para volver a leer
         if (datos == NULL){
             fprintf(stderr, "No hay espacio en memoria dinámica disponible en este momento.\n");
             return NULL;
