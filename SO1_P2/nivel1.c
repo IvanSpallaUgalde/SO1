@@ -138,7 +138,7 @@ int parse_args(char **args, char*line)
 
         args[token_counter] = token;
 
-#if DEpUG
+#if DEBUG
         printf("[parse_args() -> token %d corregido: %s]\n", token_counter, token);
 #endif
         token = strtok(NULL, deLimiters);
