@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200112L
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -7,7 +8,10 @@
 #define COMMAND_LINE_SIZE 1024
 #define ARGS_SIZE 64
 #define PROMPT '$'
+#define EXITO 0
+#define FALLO -1
 
+#define GRAY        "\x1b[90m"
 #define RED         "\x1b[91m"
 #define GREEN       "\x1b[92m"
 #define YELLOW      "\x1b[93m"
@@ -100,7 +104,7 @@ int execute_line(char *line)
     char **args = malloc(sizeof(char *) * ARGS_SIZE);
     if (args == NULL)
     {
-        fprintf(stderr, "Error: Memoria dinamica insuficiente");
+        fprintf(stderr, RED"Error: Memoria dinamica insuficiente"COLOR_RESET);
     }
     
     if (args)
@@ -119,7 +123,7 @@ int execute_line(char *line)
     }
     free(args);
     
-    return 0;
+    return EXITO;
 }
 
 
@@ -136,7 +140,7 @@ int parse_args(char **args, char*line)
     {
 
 #if DEBUG
-        printf("[Parse_args() -> token %d: %s]\n", token_counter, token);
+        printf(GRAY"[Parse_args() -> token %d: %s]\n"COLOR_RESET, token_counter, token);
 #endif
         if (token[0] == comment_char)
         {
@@ -147,7 +151,7 @@ int parse_args(char **args, char*line)
         args[token_counter] = token;
 
 #if DEBUG
-        printf("[parse_args() -> token %d corregido: %s]\n", token_counter, token);
+        printf(GRAY"[parse_args() -> token %d corregido: %s]\n"COLOR_RESET, token_counter, token);
 #endif
         token = strtok(NULL, deLimiters);
         token_counter++;
@@ -155,7 +159,7 @@ int parse_args(char **args, char*line)
 
     args[token_counter] = NULL;
 
-    printf("Numero de tokens: %d\n", token_counter);
+    printf(GRAY"Numero de tokens: %d\n"COLOR_RESET, token_counter);
 
     return token_counter;
     
@@ -223,28 +227,36 @@ int check_internal(char **args)
 
 
 
-int internal_cd(char **args) //Falta poner el #if DEBUG/////////////////////////////////////////////
+int internal_cd(char **args)
 {
-//Para el error usa -1 en vez de 1
+    char *home_dir = getenv("HOME");
+
     if (args[1] == NULL) {
-        const char *home_dir = getenv("HOME");
         if (home_dir == NULL) {
-            fprintf(stderr, "cd: HOME environment variable not set\n");
-            return -1; // Return -1 to indicate an error
+            fprintf(stderr, RED"cd: HOME environment variable not set\n"COLOR_RESET);
+            return FALLO; // Return -1 to indicate an error
         }
 
         if (chdir(home_dir) != 0) {
-            perror("cd");
-            return -1; // Return -1 to indicate an error
+            perror(RED"chdir() error:"COLOR_RESET);
+            return FALLO; // Return -1 to indicate an error
         }
+
+#if DEBUG
+        printf(GRAY"[internal_cd() -> PWD: %s]\n"COLOR_RESET, home_dir);    
+#endif
     } else {
         // Change directory to the specified path
         if (chdir(args[1]) != 0) {
-            perror("cd");
-            return -1; // Return -1 to indicate an error
+            perror(RED"chdir() error:"COLOR_RESET);
+            return FALLO; // Return -1 to indicate an error
         }
+#if DEBUG
+        printf(GRAY"[internal_cd() -> PWD %s]\n"COLOR_RESET,args[1]);
+#endif
 
-    return 0;
+    }
+    return EXITO;
 }
  
 
@@ -256,19 +268,16 @@ int internal_export(char **args)
 
 if (args[1] == NULL)
 {
-    fprintf(stderr, "Sintaxis intcorrecta. Uso: export NOMBRE=VALOR\n");
+    fprintf(stderr, RED"Sintaxis intcorrecta. Uso: export NOMBRE=VALOR\n"COLOR_RESET);
+    return FALLO;
 }
 
 //Descompone el argumento en nombre y valor
 char *arg = args[1];
 char *nombre = arg;
 char *valor = NULL;
-char *valorInicial = getenv(nombre);
 
-#if DEBUG
-    printf("[internal_export() -> nombre: %s]\n", nombre);
-    printf("[internal_export() -> valor: %s]\n", valorInicial);
-#endif
+
 while (*arg != '\0')
 {
     if (*arg == '=')
@@ -282,16 +291,18 @@ while (*arg != '\0')
 
 if (valor == NULL)
 {
-    fprintf(stderr, "Error de sintaxis. Uso: export NOMBRE=VALOR\n");
-    return -1;
+    fprintf(stderr, RED"Error de sintaxis. Uso: export NOMBRE=VALOR\n"COLOR_RESET);
+    return FALLO;
 }
 
-if (valorInicial != NULL)
-{
+char *valorInicial = getenv(nombre);
+
 #if DEBUG
-    printf("[internal_export() -> antiguo valor para %s: %s\n", nombre, valorInicial);
+    printf(GRAY"[internal_export() -> nombre: %s]\n", nombre);
+    printf("[internal_export() -> valor: %s]\n", valor);
+    printf("[internal_export() -> antiguo valor para %s: %s]\n"COLOR_RESET, nombre, valorInicial);
 #endif
-}
+
 
 
 setenv(nombre, valor, 1);
@@ -299,18 +310,22 @@ setenv(nombre, valor, 1);
 char *nuevoValor = getenv(nombre);
 
 #if DEBUG
-printf("[internal_export() -> nuevo valor para %s: %s]\n", nombre, nuevoValor);
+printf(GRAY"[internal_export() -> nuevo valor para %s: %s]\n"COLOR_RESET, nombre, nuevoValor);
 #endif
 
-    return 0;
+    return EXITO;
 }
+
+
 
 int internal_source(char **args)
 {
+
+    
 #if DEBUG
-    printf("[internal_source() -> Esta funcion ejecutara un fichero de lineas de comando]\n");
+    printf(GRAY"[internal_source() -> Esta funcion ejecutara un fichero de lineas de comando]\n"COLOR_RESET);
 #endif
-    return 0;
+    return EXITO;
 }   
 
 
@@ -318,7 +333,7 @@ int internal_source(char **args)
 int internal_jobs()
 {
 #if DEBUG
-    printf("[internal_jobs() -> Esta funcion mostrara el PID de los procesos que no esten en foreground]\n");
+    printf(GRAY"[internal_jobs() -> Esta funcion mostrara el PID de los procesos que no esten en foreground]\n"COLOR_RESET);
 #endif
 
     return 0;
@@ -329,7 +344,7 @@ int internal_jobs()
 int internal_fg(char **args)
 {
 #if DEBUG
-    printf("[internal_fg() -> Esta funcion pasara a primer plano procesos]\n");
+    printf(GRAY"[internal_fg() -> Esta funcion pasara a primer plano procesos]\n"COLOR_RESET);
 #endif
 
     return 0;
@@ -340,7 +355,7 @@ int internal_fg(char **args)
 int internal_bg(char **args)
 {
 #if DEBUG
-    printf("[internal_bg() -> Esta funcion pasara a segundo plano procesos]\n");
+    printf(GRAY"[internal_bg() -> Esta funcion pasara a segundo plano procesos]\n"COLOR_RESET);
 #endif
     return 0;
 }
@@ -351,7 +366,7 @@ int internal_exit(char **args)
 {
     
 #if DEBUG
-    printf("[internal_exit() -> Esta funcion sale del minishell]\n");
+    printf(GRAY"[internal_exit() -> Esta funcion sale del minishell]\n"COLOR_RESET);
 #endif
 
     printf("Bye Bye\n");
