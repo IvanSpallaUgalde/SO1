@@ -8,15 +8,15 @@ Descargar proyecto
 
 Acutalizar proyecyo local
 
-    git status (Comprueba los cambios)
+    git status #Comprueba los cambios
 
-    git pull (Descarga los cambios)
+    git pull #Descarga los cambios
 
 
 Subir proyecto
 
-    git add NOMBRE_ARCHIVO_A_SUBIR (Por ejemplo nivel1.c, usad el tabulador)
+    git add NOMBRE_ARCHIVO_A_SUBIR #Por ejemplo nivel1.c, usad el tabulador para encontrarlo mas facil
 
-    git commit -m "COMENTARIO" (Podeis poner cualquier comentario)
+    git commit -m "COMENTARIO" #Podeis poner cualquier comentario
 
-    git push (Sube todos los cambios)
+    git push #Sube todos los cambios
