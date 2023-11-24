@@ -6,7 +6,7 @@ Descargar proyecto
     git clone https://github.com/IvanSpallaUgalde/SO1.git
 
 
-Acutalizar proyecyo local
+Acutalizar proyecto local
 
     git status #Comprueba los cambios
 
