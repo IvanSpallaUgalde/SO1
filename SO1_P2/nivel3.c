@@ -3,8 +3,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
-#define DEBUG 1
+#define DEBUG 0
+#define DEBUG3 1
 #define COMMAND_LINE_SIZE 1024
 #define ARGS_SIZE 64
 #define PROMPT '$'
@@ -33,7 +35,7 @@ struct info_job {
 
 //Variables
 static struct info_job jobs_list[N_JOBS];
-static char mi_Shell[COMMAND_LINE_SIZE];
+static char mi_shell[COMMAND_LINE_SIZE];
 
 //Functions
 char *read_line(char *line);
@@ -51,18 +53,13 @@ int internal_exit(char **args);
 int main(int argc, char *argv[])
 {
     
+    strcpy(mi_shell, argv[0]);
+
     char line[COMMAND_LINE_SIZE];
 
     jobs_list[0].pid = 0;
     jobs_list[0].estado = 'N';
     memset(jobs_list[0].cmd, '\0', strlen(jobs_list[0].cmd));
-
-    if (argc > 0)
-    {
-        strncpy(mi_Shell, argv[0], COMMAND_LINE_SIZE - 1);
-        mi_Shell[COMMAND_LINE_SIZE - 1];
-    }
-    
 
     while (1)
     {
@@ -72,7 +69,7 @@ int main(int argc, char *argv[])
         }
         
     }
-    
+    return 0;
 }
 
 
@@ -148,26 +145,33 @@ int execute_line(char *line) {
 
             if (pid == 0) {
                 // Child process
+#if DEBUG3
+                printf(GRAY"[execute_line() -> PID hijo: %d (%s)]\n"COLOR_RESET, getpid(), args[0]);
+#endif
                 execvp(args[0], args);
                 // If execvp fails, print an error and exit
                 perror("execvp");
+                fflush(stderr);
                 exit(EXIT_FAILURE);
             } else {
                 // Parent process
                 // Wait for child process to finish
                 int status;
+#if DEBUG3
+                printf(GRAY"[execute_line() -> PID padre: %d (%s)]\n"COLOR_RESET, getpid(), mi_shell);
+#endif
                 if (waitpid(pid, &status, 0) == -1) {
                     perror("waitpid");
                 }
+#if DEBUG3
+                 printf(GRAY"[execute_line() -> Proceso hijo %d (%s) finalizado con exit(), status: %d]\n"COLOR_RESET, pid, jobs_list[0].cmd, WEXITSTATUS(status));
+#endif
+                memset(&jobs_list[0], 0, sizeof(struct info_job));
             }
         }
     }
 
-    // Free allocated memory
-    for (int i = 0; i < num_args; i++) {
-        free(args[i]);
-    }
-    free(args);
+    
 
     return EXITO;
 }
@@ -205,8 +209,9 @@ int parse_args(char **args, char*line)
 
     args[token_counter] = NULL;
 
+#if DEBUG
     printf(GRAY"Numero de tokens: %d\n"COLOR_RESET, token_counter);
-
+#endif
     return token_counter;
     
 }
@@ -341,9 +346,10 @@ if (valor == NULL)
     return FALLO;
 }
 
-char *valorInicial = getenv(nombre);
+
 
 #if DEBUG
+    char *valorInicial = getenv(nombre);
     printf(GRAY"[internal_export() -> nombre: %s]\n", nombre);
     printf("[internal_export() -> valor: %s]\n", valor);
     printf("[internal_export() -> antiguo valor para %s: %s]\n"COLOR_RESET, nombre, valorInicial);
@@ -353,9 +359,8 @@ char *valorInicial = getenv(nombre);
 
 setenv(nombre, valor, 1);
 
-char *nuevoValor = getenv(nombre);
-
 #if DEBUG
+char *nuevoValor = getenv(nombre);
 printf(GRAY"[internal_export() -> nuevo valor para %s: %s]\n"COLOR_RESET, nombre, nuevoValor);
 #endif
 
@@ -369,7 +374,7 @@ int internal_source(char **args)
 
     if (args[1] == NULL)
     {
-        fprintf(stderr, RED"Error de sintaxis. Uso: source <nombre_fichero>"COLOR_RESET);
+        fprintf(stderr, RED"Error de sintaxis. Uso: source <nombre_fichero>\n"COLOR_RESET);
         return FALLO;
     }
     
