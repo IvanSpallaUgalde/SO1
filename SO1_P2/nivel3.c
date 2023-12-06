@@ -164,7 +164,7 @@ int execute_line(char *line) {
                     perror("waitpid");
                 }
 #if DEBUG3
-                 printf(GRAY"[execute_line() -> Proceso hijo %d (%s) finalizado con exit(), status: %d]\n"COLOR_RESET, pid, jobs_list[0].cmd, WEXITSTATUS(status));
+                 printf(GRAY"[execute_line() -> Proceso hijo %d (%s) finalizado con exit(), status: %d]\n\n"COLOR_RESET, pid, jobs_list[0].cmd, WEXITSTATUS(status));
 #endif
                 memset(&jobs_list[0], 0, sizeof(struct info_job));
             }
@@ -395,13 +395,12 @@ int internal_source(char **args)
             line[length -1] = '\0';
         }
         
-#if DEBUG
+#if DEBUG3
     printf(GRAY"[internal_source() -> LINE: %s]\n"COLOR_RESET, line);
 #endif
 
         execute_line(line);
 
-        fflush(file);
     }
     
     fclose(file);
