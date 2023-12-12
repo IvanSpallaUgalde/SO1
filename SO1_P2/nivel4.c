@@ -68,6 +68,7 @@ int main(int argc, char *argv[])
     memset(jobs_list[0].cmd, '\0', strlen(jobs_list[0].cmd));
 
 
+
     signal(SIGCHLD, reaper);
     signal(SIGINT, ctrlc);
 
@@ -109,31 +110,34 @@ void print_prompt()
 
 char *read_line(char *line)
 {
-    int s = 0;
     print_prompt();
 
-    if (fgets(line, COMMAND_LINE_SIZE, stdin) == NULL)
-    {
-        perror("Error al leer la linea");
+    char *ptr = fgets(line, COMMAND_LINE_SIZE, stdin);
+
+    if(ptr){
+        line[strlen(line) - 1] = '\0';
     }
-    else
-    {
-        while (line[s])
+    else{
+        printf("'\r'");
+        if (feof(stdin))
         {
-            if (line[s] == '\n')
-            {
-                line[s] = '\0';
-            }
-            s++;
+            fprintf(stderr,"Bye bye");
+            exit(0);
         }
+        
     }
-    return line;
+    return ptr;
 }
 
 
 
 int execute_line(char *line) {
     char **args = malloc(sizeof(char *) * ARGS_SIZE);
+
+    char cmd[COMMAND_LINE_SIZE];
+
+    strcpy(cmd, line);
+
     if (args == NULL) {
         fprintf(stderr, RED "Error: Memoria dinamica insuficiente" COLOR_RESET);
         return EXITO;
@@ -159,24 +163,29 @@ int execute_line(char *line) {
                 signal(SIGCHLD, SIG_DFL);
                 signal(SIGINT, SIG_IGN);
 
-                // Child process
-                execvp(args[0], args);
-
-                // If execvp fails, print an error and exit
-                perror("execvp");
-                fflush(stderr);
-                exit(FALLO);
+                printf(COLOR_RESET);
+                if (execvp(args[0], args) == FALLO)
+                {
+                    perror("execvp error");
+                    fflush(stderr);
+                    exit(FALLO);
+                }
+                
+                
             } else {
                 
                 jobs_list[0].pid = pid;
                 jobs_list[0].estado = 'E';
-                strcpy(jobs_list[0].cmd, line);
+                strcpy(jobs_list[0].cmd, cmd);
 
 #if DEBUG3
                 printf(GRAY"[execute_line() -> PID padre: %d (%s)]\n"COLOR_RESET, getppid(), mi_shell);
                 printf(GRAY"[execute_line() -> PID hijo: %d (%s)]\n"COLOR_RESET, getpid(), jobs_list[0].cmd);
 #endif
-                    pause();
+                    while (jobs_list[0].pid > 0)
+                    {
+                        pause();
+                    }
             }
         }
     }
@@ -464,8 +473,9 @@ int internal_exit(char **args)
     return 0;
 }
 
-//asumo que funciona, luego cuando hagamos las pruebas ya veremos. Voy a mirar el tema de los comentarios de Debug 
 void reaper(int signum) {
+    signal(SIGCHLD, reaper);
+
     int status;
     pid_t ended;
 
@@ -474,36 +484,51 @@ void reaper(int signum) {
             jobs_list[0].pid = 0;
             jobs_list[0].estado = 'F';
             
+            if (WIFEXITED(status))
+            {
 #if DEBUG4
-            char mensaje[1200];
-            sprintf(mensaje, GRAY"[reaper() -> Proceso hijo %d (%s) finalizado con exit code %d]\n"COLOR_RESET, ended, jobs_list[0].cmd, WEXITSTATUS(status));
-            write(2, mensaje, strlen(mensaje));            
-#endif      
-            memset(jobs_list[0].cmd, '\0', COMMAND_LINE_SIZE);
+                printf(GRAY"[reaper() -> Proceso hijo %d (%s) finalizado con exit code %d]\n"COLOR_RESET,ended, jobs_list[0].cmd, WEXITSTATUS(status));
+#endif
+            }
+            else if (WIFSIGNALED(status))
+            {
+#if DEBUG4
+                printf(GRAY"[reaper() -> Proceso hijo %d (%s) finalizado con exit code %d]\n"COLOR_RESET, ended, jobs_list[0].cmd, WTERMSIG(status));
+#endif
+            }
+            memset(jobs_list[0].cmd, '\0', strlen(jobs_list[0].cmd));
         }
     }
 }
 
 void ctrlc(int signum)
 {
+    signal(SIGINT, ctrlc);
+
+#if DEBUG4
+            printf(GRAY"[ctrlc() -> Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]"COLOR_RESET, getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
+#endif
+
     if(jobs_list[0].pid > 0)
     {
-        if (getpid() != jobs_list[0].pid)
+        if (strcmp(jobs_list[0].cmd, mi_shell))
         {
-            if (kill(jobs_list[0].pid, SIGTERM) == 0)
-            {
-#if DEBUG4
-                printf("[ctrlc() -> Señal SIGTERM eviada a %d (%s) por %d (%s)]\n",jobs_list[0].pid, jobs_list[0].cmd, getpid(), mi_shell);
-#endif
-            }else{
-                perror("[ctrlc()→ Error al enviar SIGTERM al proceso en foreground]");
-            }
-        }else{
-             printf("[ctrlc()→ No se puede enviar SIGTERM al mini shell en foreground]\n");
+            kill(jobs_list[0].pid, SIGTERM);
         }
-    }else{
-        printf("[ctrlc()→ No hay proceso en foreground para enviar SIGTERM]\n");
+        else
+        {
+#if DEBUG4
+            fprintf(stderr, GRAY"\n[ctrlc() -> Señal %d no enviada por %d (%s) debido a que el proceso en foreground es el minishell]\n"COLOR_RESET, SIGTERM, getpid(), mi_shell);
+#endif
+        }
+        
     }
-
+    else
+    {
+#if DEBUG4
+        fprintf(stderr, GRAY"\n[ctrlc() -> Señal %d no enviada por %d (%s) debido a que no hay proceso en foreground]\n"COLOR_RESET, SIGTERM, getpid(), mi_shell);
+#endif
+    }
+    printf("\n");
     fflush(stdout);
 }
