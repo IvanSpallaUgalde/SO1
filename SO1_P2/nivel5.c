@@ -473,6 +473,41 @@ int internal_exit(char **args)
     return 0;
 }
 
+/////////////////////////////////////A REALIZAR////////////////////////////////////////
+///////////TAMBIÉN HAY QUE ACTUALIZAR EL EXECUTE_LINE, INTERNAL_JOBS Y REAPER//////////
+int is_background(char **args){
+
+}
+
+int jobs_list_add(pid_t pid, char estado, char *cmd){
+
+}
+
+int jobs_list_find(pid_t pid){
+
+}
+
+int  jobs_list_remove(int pos){
+if (pos < 0 || pos >= N_JOBS || jobs_list[pos].pid == -1){ //Si hay un error, se devuelve -1
+        return -1;
+    }
+
+    jobs_list[pos] = jobs_list[N_JOBS - 1]; //Copiamos lo del último nodo en el nodo que queremos eliminar
+
+    jobs_list[N_JOBS - 1].pid = -1;     //Y acabamos eliminando
+    jobs_list[N_JOBS - 1].state = '\0';
+    jobs_list[N_JOBS - 1].cmd[0] = '\0';
+
+    // Return 0 to indicate success
+    return 0;
+}
+
+void ctrlz(int signum){
+
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
 void reaper(int signum) {
     signal(SIGCHLD, reaper);
 
