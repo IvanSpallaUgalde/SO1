@@ -15,8 +15,7 @@
 #define PROMPT '$'
 #define EXITO 0
 #define FALLO -1
-#define N_JOBS 0
-#define MAX_JOBS 100
+#define MAX_JOBS 10
 
 #define GRAY "\x1b[90m"
 #define RED "\x1b[91m"
@@ -39,8 +38,9 @@ struct info_job
 };
 
 // Variables
-static struct info_job jobs_list[N_JOBS];
+static struct info_job jobs_list[MAX_JOBS];
 static char mi_shell[COMMAND_LINE_SIZE];
+static int n_jobs = 0;
 
 // Functions
 char *read_line(char *line);
@@ -69,6 +69,7 @@ int main(int argc, char *argv[])
 
     signal(SIGCHLD, reaper);
     signal(SIGINT, ctrlc);
+    signal(SIGTSTP, ctrlz);
 
     while (1)
     {
@@ -122,12 +123,14 @@ char *read_line(char *line)
     return ptr;
 }
 
-// Modificando el execute_line (No finalizado)
+// Modificado el execute_line (En principio esta finalizado y deberia ser correcto)
 int execute_line(char *line)
 {
     char **args = malloc(sizeof(char *) * ARGS_SIZE);
 
     char cmd[COMMAND_LINE_SIZE];
+
+    int is_bg = is_background(line);
 
     strcpy(cmd, line);
 
@@ -136,8 +139,6 @@ int execute_line(char *line)
         fprintf(stderr, RED "Error: Memoria dinamica insuficiente" COLOR_RESET);
         return EXITO;
     }
-
-    int is_bg = is_background(line);
 
     int num_args = parse_args(args, line);
 
@@ -193,7 +194,7 @@ int execute_line(char *line)
 #endif
                     while (jobs_list[0].pid > 0)
                     {
-                        pause();    
+                        pause();
                     }
                 }
             }
@@ -423,8 +424,12 @@ int internal_source(char **args)
     return EXITO;
 }
 
-int internal_jobs()
-{
+int internal_jobs(){
+
+    for (int i = 1; i < n_jobs; i++)
+    {
+        printf("[%d] %d\t%s\t%s\n", i, jobs_list[i].pid, jobs_list[i].estado, jobs_list[i].cmd);
+    }
 #if DEBUG
     printf(GRAY "[internal_jobs() -> Esta funcion mostrara el PID de los procesos que no esten en foreground]\n" COLOR_RESET);
 #endif
@@ -451,7 +456,6 @@ int internal_bg(char **args)
 
 int internal_exit(char **args)
 {
-
 #if DEBUG
     printf(GRAY "[internal_exit() -> Esta funcion sale del minishell]\n" COLOR_RESET);
 #endif
@@ -461,12 +465,12 @@ int internal_exit(char **args)
     return 0;
 }
 
-/////////////////////////////////////A REALIZAR////////////////////////////////////////
-/////////TAMBIÉN HAY QUE ACTUALIZAR EL EXECUTE_LINE, INTERNAL_JOBS Y REAPER////////////
+/*
+            NUEVAS FUNCIONES NIVEL 5
+*/
 int is_background(char **args)
 {
-
-    // Comprobar si & es el ultimo caracter para eliminarlo y devolver 1
+// Comprobar si & e ultimo caracter para eliminarlo y devolver 1
     if (strcmp(args[strlen(args) - 1], "&") == 0)
     {
         args[strlen(args) - 1] = NULL;
@@ -479,7 +483,22 @@ int is_background(char **args)
 
 int jobs_list_add(pid_t pid, char estado, char *cmd)
 {
-    // Lo estoy haciendo yo ahora mismo
+    if (n_jobs < MAX_JOBS)
+    { // Si no hemos llenado el array de jobs, podemos meter el job
+        n_jobs++;
+
+        jobs_list[n_jobs].pid = pid;
+
+        jobs_list[n_jobs].estado = estado;
+
+        strncpy(jobs_list[n_jobs].cmd, cmd, COMMAND_LINE_SIZE - 1);
+        jobs_list[n_jobs].cmd[COMMAND_LINE_SIZE - 1] = '\0'; // Ensure null-termination
+
+        
+        return EXITO; // 
+    }
+
+    return FALLO; // No hay espacio disponible
 }
 
 int jobs_list_find(pid_t pid)
@@ -503,22 +522,24 @@ int jobs_list_remove(int pos)
         return -1;
     }
 
-    jobs_list[pos] = jobs_list[N_JOBS - 1]; // Copiamos lo del último nodo en el nodo que queremos eliminar
+    jobs_list[pos] = jobs_list[MAX_JOBS - 1]; // Copiamos lo del último nodo en el nodo que queremos eliminar
 
-    jobs_list[N_JOBS - 1].pid = -1; // Eliminamos el último nodo
-    jobs_list[N_JOBS - 1].estado = '\0';
+    jobs_list[MAX_JOBS - 1].pid = -1; // Eliminamos el último nodo
+    jobs_list[MAX_JOBS - 1].estado = '\0';
     ;
-    jobs_list[N_JOBS - 1].cmd[0] = '\0';
+    jobs_list[MAX_JOBS - 1].cmd[0] = '\0';
 
-    N_JOBS--; //-1 job}
+ 
+    n_jobs--; //-1 job}
 }
 
-void ctrlz(int signum)
-{
+void ctrlz(int signum){
+
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////
-
+/*
+            END NUEVAS FUNCIONES NIVEL 5
+*/
 void reaper(int signum)
 {
     signal(SIGCHLD, reaper);
@@ -546,6 +567,24 @@ void reaper(int signum)
 #endif
             }
             memset(jobs_list[0].cmd, '\0', strlen(jobs_list[0].cmd));
+        }
+        else{
+            int pos = jobs_list_find(ended);
+
+            if (WIFEXITED(status))
+            {
+#if DEBUG5
+                    printf("\n[reaper() -> Proceso hijo %d (ps f) en background (%s) finalizado con exit code %d]\n", ended, jobs_list[pos].cmd, WEXITSTATUS(status));
+#endif
+            }
+            else if (WIFSIGNALED(status))
+            {
+#if DEBUG5
+                    printf("\n[Proceso hijo %d (ps f) en background (%s) finalizado con exit code %d]\n", ended, jobs_list[pos].cmd, WTERMSIG(status));
+#endif
+            }
+
+            jobs_list_remove(pos);
         }
     }
 }
