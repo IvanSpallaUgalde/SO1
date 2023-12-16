@@ -10,6 +10,7 @@
 #define DEBUG3 1
 #define DEBUG4 1
 #define DEBUGE 0
+#define DEBUG5 1
 #define COMMAND_LINE_SIZE 1024
 #define ARGS_SIZE 64
 #define PROMPT '$'
@@ -56,6 +57,12 @@ int internal_bg(char **args);
 int internal_exit(char **args);
 void reaper(int signum);
 void ctrlc(int signum);
+void ctrlz(int signum);
+
+int is_background(char **args);
+int jobs_list_add(pid_t pid, char estado, char *cmd);
+int jobs_list_find(pid_t pid);
+int jobs_list_remove(int pos);
 
 int main(int argc, char *argv[])
 {
@@ -130,7 +137,7 @@ int execute_line(char *line)
 
     char cmd[COMMAND_LINE_SIZE];
 
-    int is_bg = is_background(line);
+    int is_bg = is_background(args);
 
     strcpy(cmd, line);
 
@@ -424,11 +431,12 @@ int internal_source(char **args)
     return EXITO;
 }
 
-int internal_jobs(){
+int internal_jobs()
+{
 
     for (int i = 1; i < n_jobs; i++)
     {
-        printf("[%d] %d\t%s\t%s\n", i, jobs_list[i].pid, jobs_list[i].estado, jobs_list[i].cmd);
+        printf("[%d] %d\t%c\t%s\n", i, jobs_list[i].pid, jobs_list[0].estado, jobs_list[i].cmd);
     }
 #if DEBUG
     printf(GRAY "[internal_jobs() -> Esta funcion mostrara el PID de los procesos que no esten en foreground]\n" COLOR_RESET);
@@ -470,10 +478,17 @@ int internal_exit(char **args)
 */
 int is_background(char **args)
 {
-// Comprobar si & e ultimo caracter para eliminarlo y devolver 1
-    if (strcmp(args[strlen(args) - 1], "&") == 0)
+    int i = 0;
+
+    while (args[i] != NULL)
     {
-        args[strlen(args) - 1] = NULL;
+        i++;
+    }
+    
+    // Comprobar si & e ultimo caracter para eliminarlo y devolver 1
+    if (i > 0 && strcmp(args[i - 1], "&") == 0)
+    {
+        args[i - 1] = NULL;
         return 1;
     }
 
@@ -494,8 +509,7 @@ int jobs_list_add(pid_t pid, char estado, char *cmd)
         strncpy(jobs_list[n_jobs].cmd, cmd, COMMAND_LINE_SIZE - 1);
         jobs_list[n_jobs].cmd[COMMAND_LINE_SIZE - 1] = '\0'; // Ensure null-termination
 
-        
-        return EXITO; // 
+        return EXITO; //
     }
 
     return FALLO; // No hay espacio disponible
@@ -519,7 +533,7 @@ int jobs_list_remove(int pos)
 {
     if (pos < 0 || pos >= MAX_JOBS || jobs_list[pos].pid == -1)
     { // Si hay un error, se devuelve -1
-        return -1;
+        return FALLO;
     }
 
     jobs_list[pos] = jobs_list[MAX_JOBS - 1]; // Copiamos lo del último nodo en el nodo que queremos eliminar
@@ -529,12 +543,42 @@ int jobs_list_remove(int pos)
     ;
     jobs_list[MAX_JOBS - 1].cmd[0] = '\0';
 
- 
     n_jobs--; //-1 job}
+    return EXITO;
 }
 
-void ctrlz(int signum){
+void ctrlz(int signum)
+{
+    signal(SIGTSTP, ctrlz);
 
+    if (jobs_list[0].pid > 0)
+    {
+        if (strcmp(jobs_list[0].cmd, mi_shell))
+        {
+
+            kill(jobs_list[0].pid, SIGSTOP);
+#if DEBUG5
+            printf("[ctrlz() -> Señal %d (SIGSTOP) enviada a %d (%s) por %d (%s)]\n", signum, jobs_list[0].pid, jobs_list[0].cmd, getpid(), mi_shell);
+#endif
+            jobs_list[0].estado = 'D';
+            jobs_list_add(jobs_list[0].pid, jobs_list[0].estado, jobs_list[0].cmd);
+
+            // Reset trabajo en foreground
+            jobs_list[0].pid = 0;
+            jobs_list[0].estado = 'N';
+            memset(jobs_list[0].cmd, '\0', strlen(jobs_list[0].cmd));
+        }
+        else
+        {
+            printf("[ctrlz() -> Señal %d (SIGTSTP) no enviada debido a que el proceso en foreground es el shell]\n", signum);
+        }
+    }
+    else
+    {
+        printf("[ctrlz() -> Señal %d (SIGTSTP) no enviada debido a que no hay proceso en el foreground]\n", signum);
+    }
+
+    fflush(stdout);
 }
 
 /*
@@ -568,19 +612,20 @@ void reaper(int signum)
             }
             memset(jobs_list[0].cmd, '\0', strlen(jobs_list[0].cmd));
         }
-        else{
+        else
+        {
             int pos = jobs_list_find(ended);
 
             if (WIFEXITED(status))
             {
 #if DEBUG5
-                    printf("\n[reaper() -> Proceso hijo %d (ps f) en background (%s) finalizado con exit code %d]\n", ended, jobs_list[pos].cmd, WEXITSTATUS(status));
+                printf("\n[reaper() -> Proceso hijo %d (ps f) en background (%s) finalizado con exit code %d]\n", ended, jobs_list[pos].cmd, WEXITSTATUS(status));
 #endif
             }
             else if (WIFSIGNALED(status))
             {
 #if DEBUG5
-                    printf("\n[Proceso hijo %d (ps f) en background (%s) finalizado con exit code %d]\n", ended, jobs_list[pos].cmd, WTERMSIG(status));
+                printf("\n[Proceso hijo %d (ps f) en background (%s) finalizado con exit code %d]\n", ended, jobs_list[pos].cmd, WTERMSIG(status));
 #endif
             }
 
