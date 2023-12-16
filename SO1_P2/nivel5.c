@@ -15,32 +15,34 @@
 #define PROMPT '$'
 #define EXITO 0
 #define FALLO -1
-#define N_JOBS 64
+#define N_JOBS 0
+#define MAX_JOBS 100
 
-#define GRAY        "\x1b[90m"
-#define RED         "\x1b[91m"
-#define GREEN       "\x1b[92m"
-#define YELLOW      "\x1b[93m"
-#define BLUE        "\x1b[94m"
-#define MAGENTA     "\x1b[95m"
-#define CYAN        "\x1b[96m"
-#define WHITE       "\x1b[97m"
+#define GRAY "\x1b[90m"
+#define RED "\x1b[91m"
+#define GREEN "\x1b[92m"
+#define YELLOW "\x1b[93m"
+#define BLUE "\x1b[94m"
+#define MAGENTA "\x1b[95m"
+#define CYAN "\x1b[96m"
+#define WHITE "\x1b[97m"
 #define COLOR_RESET "\x1b[0m"
-#define BLOND       "\x1b[1m"
+#define BLOND "\x1b[1m"
 
 char line[COMMAND_LINE_SIZE];
 
-struct info_job {
-   pid_t pid;
-   char estado; // ‘N’, ’E’, ‘D’, ‘F’ (‘N’: Ninguno, ‘E’: Ejecutándose y ‘D’: Detenido, ‘F’: Finalizado) 
-   char cmd[COMMAND_LINE_SIZE]; // línea de comando asociada
+struct info_job
+{
+    pid_t pid;
+    char estado;                 // ‘N’, ’E’, ‘D’, ‘F’ (‘N’: Ninguno, ‘E’: Ejecutándose y ‘D’: Detenido, ‘F’: Finalizado)
+    char cmd[COMMAND_LINE_SIZE]; // línea de comando asociada
 };
 
-//Variables
+// Variables
 static struct info_job jobs_list[N_JOBS];
 static char mi_shell[COMMAND_LINE_SIZE];
 
-//Functions
+// Functions
 char *read_line(char *line);
 int execute_line(char *line);
 int parse_args(char **args, char *line);
@@ -55,19 +57,15 @@ int internal_exit(char **args);
 void reaper(int signum);
 void ctrlc(int signum);
 
-
-
 int main(int argc, char *argv[])
 {
-    
+
     strcpy(mi_shell, argv[0]);
     char line[COMMAND_LINE_SIZE];
 
     jobs_list[0].pid = 0;
     jobs_list[0].estado = 'N';
     memset(jobs_list[0].cmd, '\0', strlen(jobs_list[0].cmd));
-
-
 
     signal(SIGCHLD, reaper);
     signal(SIGINT, ctrlc);
@@ -78,35 +76,29 @@ int main(int argc, char *argv[])
         {
             execute_line(line);
         }
-        
     }
-    
+
     return 0;
 }
-
-
 
 void print_prompt()
 {
 
-    //Get USER
+    // Get USER
     char *user = getenv("USER");
 
     char *prompt = malloc(sizeof(char) * COMMAND_LINE_SIZE);
 
-    //Get directory
+    // Get directory
     getcwd(prompt, COMMAND_LINE_SIZE);
-    
-    //Print the prompt
+
+    // Print the prompt
     printf(BLOND RED "%s:" BLUE "%c" COLOR_RESET GREEN "%s: " COLOR_RESET, user, PROMPT, prompt);
 
     free(prompt);
 
     fflush(stdout);
-
 }
-
-
 
 char *read_line(char *line)
 {
@@ -114,54 +106,63 @@ char *read_line(char *line)
 
     char *ptr = fgets(line, COMMAND_LINE_SIZE, stdin);
 
-    if(ptr){
+    if (ptr)
+    {
         line[strlen(line) - 1] = '\0';
     }
-    else{
+    else
+    {
         printf("'\r'");
         if (feof(stdin))
         {
-            fprintf(stderr,"Bye bye");
+            fprintf(stderr, "Bye bye");
             exit(0);
         }
-        
     }
     return ptr;
 }
 
-
-
-int execute_line(char *line) {
+// Modificando el execute_line (No finalizado)
+int execute_line(char *line)
+{
     char **args = malloc(sizeof(char *) * ARGS_SIZE);
 
     char cmd[COMMAND_LINE_SIZE];
 
     strcpy(cmd, line);
 
-    if (args == NULL) {
+    if (args == NULL)
+    {
         fprintf(stderr, RED "Error: Memoria dinamica insuficiente" COLOR_RESET);
         return EXITO;
     }
 
+    int is_bg = is_background(line);
+
     int num_args = parse_args(args, line);
 
-    if (num_args > 0) {
-        
-        if (!check_internal(args)) {
+    if (num_args > 0)
+    {
+
+        if (!check_internal(args))
+        {
 
             pid_t pid = fork();
 
-            if (pid < 0) {
+            if (pid < 0)
+            {
                 // Fork error
                 perror("fork");
                 free(args);
                 return EXITO;
             }
 
-            if (pid == 0) {
+            if (pid == 0)
+            {
 
                 signal(SIGCHLD, SIG_DFL);
                 signal(SIGINT, SIG_IGN);
+                signal(SIGTSTP, SIG_IGN);
 
                 printf(COLOR_RESET);
                 if (execvp(args[0], args) == FALLO)
@@ -170,34 +171,39 @@ int execute_line(char *line) {
                     fflush(stderr);
                     exit(FALLO);
                 }
-                
-                
-            } else {
-                
-                jobs_list[0].pid = pid;
-                jobs_list[0].estado = 'E';
-                strcpy(jobs_list[0].cmd, cmd);
+            }
+            else
+            {
 
+                if (is_bg)
+                {
+#if DEBUG5
+                    printf("Proceso en background");
+#endif
+                    jobs_list_add(pid, 'E', cmd);
+                }
+                else
+                {
+                    jobs_list[0].pid = pid;
+                    jobs_list[0].estado = 'E';
+                    strcpy(jobs_list[0].cmd, cmd);
 #if DEBUG3
-                printf(GRAY"[execute_line() -> PID padre: %d (%s)]\n"COLOR_RESET, getppid(), mi_shell);
-                printf(GRAY"[execute_line() -> PID hijo: %d (%s)]\n"COLOR_RESET, getpid(), jobs_list[0].cmd);
+                    printf(GRAY "[execute_line() -> PID padre: %d (%s)]\n" COLOR_RESET, getppid(), mi_shell);
+                    printf(GRAY "[execute_line() -> PID hijo: %d (%s)]\n" COLOR_RESET, getpid(), jobs_list[0].cmd);
 #endif
                     while (jobs_list[0].pid > 0)
                     {
-                        pause();
+                        pause();    
                     }
+                }
             }
         }
     }
 
-    
-
     return EXITO;
 }
 
-
-
-int parse_args(char **args, char*line)
+int parse_args(char **args, char *line)
 {
     const char deLimiters[] = " \t\n";
     const char comment_char = '#';
@@ -209,7 +215,7 @@ int parse_args(char **args, char*line)
     {
 
 #if DEBUG
-        printf(GRAY"[Parse_args() -> token %d: %s]\n"COLOR_RESET, token_counter, token);
+        printf(GRAY "[Parse_args() -> token %d: %s]\n" COLOR_RESET, token_counter, token);
 #endif
         if (token[0] == comment_char)
         {
@@ -220,7 +226,7 @@ int parse_args(char **args, char*line)
         args[token_counter] = token;
 
 #if DEBUG
-        printf(GRAY"[parse_args() -> token %d corregido: %s]\n"COLOR_RESET, token_counter, token);
+        printf(GRAY "[parse_args() -> token %d corregido: %s]\n" COLOR_RESET, token_counter, token);
 #endif
         token = strtok(NULL, deLimiters);
         token_counter++;
@@ -229,13 +235,10 @@ int parse_args(char **args, char*line)
     args[token_counter] = NULL;
 
 #if DEBUG
-    printf(GRAY"Numero de tokens: %d\n"COLOR_RESET, token_counter);
+    printf(GRAY "Numero de tokens: %d\n" COLOR_RESET, token_counter);
 #endif
     return token_counter;
-    
 }
-
-
 
 int check_internal(char **args)
 {
@@ -272,7 +275,7 @@ int check_internal(char **args)
         internal_jobs(args);
         internal = 1;
     }
-    
+
     if (strcmp(args[0], fg) == 0)
     {
         internal_fg(args);
@@ -290,45 +293,46 @@ int check_internal(char **args)
         internal_exit(args);
         internal = 1;
     }
-    
 
     return internal;
 }
-
-
 
 int internal_cd(char **args)
 {
     char *home_dir = getenv("HOME");
 
-    if (args[1] == NULL) {
-        if (home_dir == NULL) {
-            fprintf(stderr, RED"cd: HOME environment variable not set\n"COLOR_RESET);
+    if (args[1] == NULL)
+    {
+        if (home_dir == NULL)
+        {
+            fprintf(stderr, RED "cd: HOME environment variable not set\n" COLOR_RESET);
             return FALLO; // Return -1 to indicate an error
         }
 
-        if (chdir(home_dir) != 0) {
-            perror(RED"Error cambiando al directorio HOME"COLOR_RESET);
+        if (chdir(home_dir) != 0)
+        {
+            perror(RED "Error cambiando al directorio HOME" COLOR_RESET);
             return FALLO; // Return -1 to indicate an error
         }
 
 #if DEBUG
-        printf(GRAY"[internal_cd() -> PWD: %s]\n"COLOR_RESET, home_dir);    
+        printf(GRAY "[internal_cd() -> PWD: %s]\n" COLOR_RESET, home_dir);
 #endif
-    } else {
+    }
+    else
+    {
         // Change directory to the specified path
-        if (chdir(args[1]) != 0) {
-            perror(RED"chdir() error:"COLOR_RESET);
+        if (chdir(args[1]) != 0)
+        {
+            perror(RED "chdir() error:" COLOR_RESET);
             return FALLO; // Return -1 to indicate an error
         }
 #if DEBUG
-        printf(GRAY"[internal_cd() -> PWD %s]\n"COLOR_RESET,args[1]);
+        printf(GRAY "[internal_cd() -> PWD %s]\n" COLOR_RESET, args[1]);
 #endif
-
     }
     return EXITO;
 }
- 
 
 int internal_export(char **args)
 {
@@ -336,71 +340,64 @@ int internal_export(char **args)
     printf(" \n");
 #endif
 
-if (args[1] == NULL)
-{
-    fprintf(stderr, RED"Sintaxis intcorrecta. Uso: export NOMBRE=VALOR\n"COLOR_RESET);
-    return FALLO;
-}
-
-//Descompone el argumento en nombre y valor
-char *arg = args[1];
-char *nombre = arg;
-char *valor = NULL;
-
-
-while (*arg != '\0')
-{
-    if (*arg == '=')
+    if (args[1] == NULL)
     {
-        *arg = '\0';        //Establece el final del nombre
-        valor = arg + 1;    //Apunta al comienzo del valor
-        break;
+        fprintf(stderr, RED "Sintaxis intcorrecta. Uso: export NOMBRE=VALOR\n" COLOR_RESET);
+        return FALLO;
     }
-    arg++;
-}
 
-if (valor == NULL)
-{
-    fprintf(stderr, RED"Error de sintaxis. Uso: export NOMBRE=VALOR\n"COLOR_RESET);
-    return FALLO;
-}
+    // Descompone el argumento en nombre y valor
+    char *arg = args[1];
+    char *nombre = arg;
+    char *valor = NULL;
 
+    while (*arg != '\0')
+    {
+        if (*arg == '=')
+        {
+            *arg = '\0';     // Establece el final del nombre
+            valor = arg + 1; // Apunta al comienzo del valor
+            break;
+        }
+        arg++;
+    }
 
+    if (valor == NULL)
+    {
+        fprintf(stderr, RED "Error de sintaxis. Uso: export NOMBRE=VALOR\n" COLOR_RESET);
+        return FALLO;
+    }
 
 #if DEBUG
     char *valorInicial = getenv(nombre);
-    printf(GRAY"[internal_export() -> nombre: %s]\n", nombre);
+    printf(GRAY "[internal_export() -> nombre: %s]\n", nombre);
     printf("[internal_export() -> valor: %s]\n", valor);
-    printf("[internal_export() -> antiguo valor para %s: %s]\n"COLOR_RESET, nombre, valorInicial);
+    printf("[internal_export() -> antiguo valor para %s: %s]\n" COLOR_RESET, nombre, valorInicial);
 #endif
 
-
-
-setenv(nombre, valor, 1);
+    setenv(nombre, valor, 1);
 
 #if DEBUG
-char *nuevoValor = getenv(nombre);
-printf(GRAY"[internal_export() -> nuevo valor para %s: %s]\n"COLOR_RESET, nombre, nuevoValor);
+    char *nuevoValor = getenv(nombre);
+    printf(GRAY "[internal_export() -> nuevo valor para %s: %s]\n" COLOR_RESET, nombre, nuevoValor);
 #endif
 
     return EXITO;
 }
-
-
 
 int internal_source(char **args)
 {
 
     if (args[1] == NULL)
     {
-        fprintf(stderr, RED"Error de sintaxis. Uso: source <nombre_fichero>\n"COLOR_RESET);
+        fprintf(stderr, RED "Error de sintaxis. Uso: source <nombre_fichero>\n" COLOR_RESET);
         return FALLO;
     }
-    
+
     FILE *file = fopen(args[1], "r");
     if (file == NULL)
     {
-        perror(RED"fopen error:"COLOR_RESET);
+        perror(RED "fopen error:" COLOR_RESET);
         return FALLO;
     }
 
@@ -409,63 +406,54 @@ int internal_source(char **args)
     while (fgets(line, COMMAND_LINE_SIZE, file) != NULL)
     {
         size_t length = strlen(line);
-        if (length > 0 && line[length -1] == '\n')
+        if (length > 0 && line[length - 1] == '\n')
         {
-            line[length -1] = '\0';
+            line[length - 1] = '\0';
         }
-        
+
 #if DEBUG
-    printf(GRAY"[internal_source() -> LINE: %s]\n"COLOR_RESET, line);
+        printf(GRAY "[internal_source() -> LINE: %s]\n" COLOR_RESET, line);
 #endif
 
         execute_line(line);
-
     }
-    
+
     fclose(file);
 
     return EXITO;
-}   
-
-
+}
 
 int internal_jobs()
 {
 #if DEBUG
-    printf(GRAY"[internal_jobs() -> Esta funcion mostrara el PID de los procesos que no esten en foreground]\n"COLOR_RESET);
+    printf(GRAY "[internal_jobs() -> Esta funcion mostrara el PID de los procesos que no esten en foreground]\n" COLOR_RESET);
 #endif
 
     return 0;
 }
-
-
 
 int internal_fg(char **args)
 {
 #if DEBUG
-    printf(GRAY"[internal_fg() -> Esta funcion pasara a primer plano procesos]\n"COLOR_RESET);
+    printf(GRAY "[internal_fg() -> Esta funcion pasara a primer plano procesos]\n" COLOR_RESET);
 #endif
 
     return 0;
 }
-
-
 
 int internal_bg(char **args)
 {
 #if DEBUG
-    printf(GRAY"[internal_bg() -> Esta funcion pasara a segundo plano procesos]\n"COLOR_RESET);
+    printf(GRAY "[internal_bg() -> Esta funcion pasara a segundo plano procesos]\n" COLOR_RESET);
 #endif
     return 0;
 }
 
-
-
 int internal_exit(char **args)
 {
-    
+
 #if DEBUG
-    printf(GRAY"[internal_exit() -> Esta funcion sale del minishell]\n"COLOR_RESET);
+    printf(GRAY "[internal_exit() -> Esta funcion sale del minishell]\n" COLOR_RESET);
 #endif
 
     printf("Bye Bye\n");
@@ -474,61 +462,87 @@ int internal_exit(char **args)
 }
 
 /////////////////////////////////////A REALIZAR////////////////////////////////////////
-///////////TAMBIÉN HAY QUE ACTUALIZAR EL EXECUTE_LINE, INTERNAL_JOBS Y REAPER//////////
-int is_background(char **args){
+/////////TAMBIÉN HAY QUE ACTUALIZAR EL EXECUTE_LINE, INTERNAL_JOBS Y REAPER////////////
+int is_background(char **args)
+{
 
-}
-
-int jobs_list_add(pid_t pid, char estado, char *cmd){
-
-}
-
-int jobs_list_find(pid_t pid){
-
-}
-
-int  jobs_list_remove(int pos){
-if (pos < 0 || pos >= N_JOBS || jobs_list[pos].pid == -1){ //Si hay un error, se devuelve -1
-        return -1;
+    // Comprobar si & es el ultimo caracter para eliminarlo y devolver 1
+    if (strcmp(args[strlen(args) - 1], "&") == 0)
+    {
+        args[strlen(args) - 1] = NULL;
+        return 1;
     }
 
-    jobs_list[pos] = jobs_list[N_JOBS - 1]; //Copiamos lo del último nodo en el nodo que queremos eliminar
-
-    jobs_list[N_JOBS - 1].pid = -1;     //Y acabamos eliminando
-    jobs_list[N_JOBS - 1].state = '\0';
-    jobs_list[N_JOBS - 1].cmd[0] = '\0';
-
-    // Return 0 to indicate success
+    // En args el ultimo caracter no es "&", por lo tanto se devuelve 0
     return 0;
 }
 
-void ctrlz(int signum){
+int jobs_list_add(pid_t pid, char estado, char *cmd)
+{
+    // Lo estoy haciendo yo ahora mismo
+}
 
+int jobs_list_find(pid_t pid)
+{
+    for (int idx = 0; idx < MAX_JOBS; idx++)
+    {
+
+        if (jobs_list[idx].pid == pid)
+        {
+            return idx; // Devolvemos la posición en el que lo hemos encontrado
+        }
+    }
+
+    return -1; // No hay ningún job con dicho PID
+}
+
+int jobs_list_remove(int pos)
+{
+    if (pos < 0 || pos >= MAX_JOBS || jobs_list[pos].pid == -1)
+    { // Si hay un error, se devuelve -1
+        return -1;
+    }
+
+    jobs_list[pos] = jobs_list[N_JOBS - 1]; // Copiamos lo del último nodo en el nodo que queremos eliminar
+
+    jobs_list[N_JOBS - 1].pid = -1; // Eliminamos el último nodo
+    jobs_list[N_JOBS - 1].estado = '\0';
+    ;
+    jobs_list[N_JOBS - 1].cmd[0] = '\0';
+
+    N_JOBS--; //-1 job}
+}
+
+void ctrlz(int signum)
+{
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
-void reaper(int signum) {
+void reaper(int signum)
+{
     signal(SIGCHLD, reaper);
 
     int status;
     pid_t ended;
 
-    while ((ended = waitpid(-1, &status, WNOHANG)) > 0) {
-        if (ended == jobs_list[0].pid) {
+    while ((ended = waitpid(-1, &status, WNOHANG)) > 0)
+    {
+        if (ended == jobs_list[0].pid)
+        {
             jobs_list[0].pid = 0;
             jobs_list[0].estado = 'F';
-            
+
             if (WIFEXITED(status))
             {
 #if DEBUG4
-                printf(GRAY"[reaper() -> Proceso hijo %d (%s) finalizado con exit code %d]\n"COLOR_RESET,ended, jobs_list[0].cmd, WEXITSTATUS(status));
+                printf(GRAY "[reaper() -> Proceso hijo %d (%s) finalizado con exit code %d]\n" COLOR_RESET, ended, jobs_list[0].cmd, WEXITSTATUS(status));
 #endif
             }
             else if (WIFSIGNALED(status))
             {
 #if DEBUG4
-                printf(GRAY"[reaper() -> Proceso hijo %d (%s) finalizado con exit code %d]\n"COLOR_RESET, ended, jobs_list[0].cmd, WTERMSIG(status));
+                printf(GRAY "[reaper() -> Proceso hijo %d (%s) finalizado con exit code %d]\n" COLOR_RESET, ended, jobs_list[0].cmd, WTERMSIG(status));
 #endif
             }
             memset(jobs_list[0].cmd, '\0', strlen(jobs_list[0].cmd));
@@ -541,10 +555,10 @@ void ctrlc(int signum)
     signal(SIGINT, ctrlc);
 
 #if DEBUG4
-            printf(GRAY"[ctrlc() -> Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]"COLOR_RESET, getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
+    printf(GRAY "[ctrlc() -> Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]" COLOR_RESET, getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
 #endif
 
-    if(jobs_list[0].pid > 0)
+    if (jobs_list[0].pid > 0)
     {
         if (strcmp(jobs_list[0].cmd, mi_shell))
         {
@@ -553,15 +567,14 @@ void ctrlc(int signum)
         else
         {
 #if DEBUG4
-            fprintf(stderr, GRAY"\n[ctrlc() -> Señal %d no enviada por %d (%s) debido a que el proceso en foreground es el minishell]\n"COLOR_RESET, SIGTERM, getpid(), mi_shell);
+            fprintf(stderr, GRAY "\n[ctrlc() -> Señal %d no enviada por %d (%s) debido a que el proceso en foreground es el minishell]\n" COLOR_RESET, SIGTERM, getpid(), mi_shell);
 #endif
         }
-        
     }
     else
     {
 #if DEBUG4
-        fprintf(stderr, GRAY"\n[ctrlc() -> Señal %d no enviada por %d (%s) debido a que no hay proceso en foreground]\n"COLOR_RESET, SIGTERM, getpid(), mi_shell);
+        fprintf(stderr, GRAY "\n[ctrlc() -> Señal %d no enviada por %d (%s) debido a que no hay proceso en foreground]\n" COLOR_RESET, SIGTERM, getpid(), mi_shell);
 #endif
     }
     printf("\n");
