@@ -171,8 +171,7 @@ int execute_line(char *line)
                 signal(SIGCHLD, SIG_DFL);
                 signal(SIGINT, SIG_IGN);
                 signal(SIGTSTP, SIG_IGN);
-
-                printf(COLOR_RESET"");
+                
                 if (execvp(args[0], args) == FALLO)
                 {
                     perror("execvp error");
@@ -651,6 +650,7 @@ void reaper(int signum)
 void ctrlc(int signum)
 {
     signal(SIGINT, ctrlc);
+    printf("\n");
 
 #if DEBUG4
     printf(GRAY "[ctrlc() -> Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]" COLOR_RESET, getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
