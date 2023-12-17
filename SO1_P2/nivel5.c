@@ -11,6 +11,7 @@
 #define DEBUG4 1
 #define DEBUGE 0
 #define DEBUG5 1
+#define DEBGUMINE 0
 #define COMMAND_LINE_SIZE 1024
 #define ARGS_SIZE 64
 #define PROMPT '$'
@@ -41,7 +42,7 @@ struct info_job
 // Variables
 static struct info_job jobs_list[MAX_JOBS];
 static char mi_shell[COMMAND_LINE_SIZE];
-static int n_jobs = 0;
+static int n_jobs = 1;
 
 // Functions
 char *read_line(char *line);
@@ -130,17 +131,14 @@ char *read_line(char *line)
     return ptr;
 }
 
-// Modificado el execute_line (En principio esta finalizado y deberia ser correcto)
 int execute_line(char *line)
 {
     char **args = malloc(sizeof(char *) * ARGS_SIZE);
 
     char cmd[COMMAND_LINE_SIZE];
 
-    int is_bg = is_background(args);
-
     strcpy(cmd, line);
-
+    
     if (args == NULL)
     {
         fprintf(stderr, RED "Error: Memoria dinamica insuficiente" COLOR_RESET);
@@ -149,6 +147,8 @@ int execute_line(char *line)
 
     int num_args = parse_args(args, line);
 
+    int is_bg = is_background(args);
+    
     if (num_args > 0)
     {
 
@@ -172,7 +172,7 @@ int execute_line(char *line)
                 signal(SIGINT, SIG_IGN);
                 signal(SIGTSTP, SIG_IGN);
 
-                printf(COLOR_RESET);
+                printf(COLOR_RESET"");
                 if (execvp(args[0], args) == FALLO)
                 {
                     perror("execvp error");
@@ -186,8 +186,9 @@ int execute_line(char *line)
                 if (is_bg)
                 {
 #if DEBUG5
-                    printf("Proceso en background");
+                    printf(GRAY"Proceso en background\n"COLOR_RESET);
 #endif
+                    
                     jobs_list_add(pid, 'E', cmd);
                 }
                 else
@@ -436,7 +437,7 @@ int internal_jobs()
 
     for (int i = 1; i < n_jobs; i++)
     {
-        printf("[%d] %d\t%c\t%s\n", i, jobs_list[i].pid, jobs_list[0].estado, jobs_list[i].cmd);
+        printf("[%d] %d\t%c\t%s\n", i, jobs_list[i].pid, jobs_list[i].estado, jobs_list[i].cmd);
     }
 #if DEBUG
     printf(GRAY "[internal_jobs() -> Esta funcion mostrara el PID de los procesos que no esten en foreground]\n" COLOR_RESET);
@@ -478,11 +479,15 @@ int internal_exit(char **args)
 */
 int is_background(char **args)
 {
+
     int i = 0;
 
     while (args[i] != NULL)
     {
         i++;
+#if DEBGUMINE
+        printf("args[%d] = %s\n", i-1, args[i-1]);
+#endif
     }
     
     // Comprobar si & e ultimo caracter para eliminarlo y devolver 1
@@ -498,18 +503,26 @@ int is_background(char **args)
 
 int jobs_list_add(pid_t pid, char estado, char *cmd)
 {
+#if DEBGUMINE
+    printf("n_jobs = %d\n", n_jobs);
+#endif
     if (n_jobs < MAX_JOBS)
-    { // Si no hemos llenado el array de jobs, podemos meter el job
-        n_jobs++;
-
+    {  
         jobs_list[n_jobs].pid = pid;
-
+#if DEBGUMINE
+        printf("jobs_list_add() -> estado = %c\n", estado);
+#endif
         jobs_list[n_jobs].estado = estado;
-
-        strncpy(jobs_list[n_jobs].cmd, cmd, COMMAND_LINE_SIZE - 1);
+#if DEBGUMINE
+        printf("jobs_list_add() -> estado = %c || jobs_list[%d].estado = %c\n", estado, n_jobs, jobs_list[n_jobs].estado);
+#endif
+        strcpy(jobs_list[n_jobs].cmd, cmd);
         jobs_list[n_jobs].cmd[COMMAND_LINE_SIZE - 1] = '\0'; // Ensure null-termination
 
-        return EXITO; //
+        printf("[%d] %d\t%c\t%s\n", n_jobs, jobs_list[n_jobs].pid, jobs_list[n_jobs].estado, jobs_list[n_jobs].cmd);
+
+        n_jobs++;
+        return EXITO;
     }
 
     return FALLO; // No hay espacio disponible
@@ -536,14 +549,13 @@ int jobs_list_remove(int pos)
         return FALLO;
     }
 
-    jobs_list[pos] = jobs_list[MAX_JOBS - 1]; // Copiamos lo del último nodo en el nodo que queremos eliminar
+    jobs_list[pos] = jobs_list[n_jobs - 1]; // Copiamos lo del último nodo en el nodo que queremos eliminar
 
-    jobs_list[MAX_JOBS - 1].pid = -1; // Eliminamos el último nodo
-    jobs_list[MAX_JOBS - 1].estado = '\0';
-    ;
-    jobs_list[MAX_JOBS - 1].cmd[0] = '\0';
+    jobs_list[n_jobs - 1].pid = -1; // Eliminamos el último nodo
+    jobs_list[n_jobs - 1].estado = '\0';
+    jobs_list[n_jobs - 1].cmd[0] = '\0';
 
-    n_jobs--; //-1 job}
+    n_jobs--; 
     return EXITO;
 }
 
@@ -618,14 +630,16 @@ void reaper(int signum)
 
             if (WIFEXITED(status))
             {
+                printf("\nTerminando PID %d (%s) en jobs_list[%d] con status %d]\n", ended, jobs_list[pos].cmd, pos, WEXITSTATUS(status));
 #if DEBUG5
-                printf("\n[reaper() -> Proceso hijo %d (ps f) en background (%s) finalizado con exit code %d]\n", ended, jobs_list[pos].cmd, WEXITSTATUS(status));
+                printf(GRAY"\n[reaper() -> Proceso hijo %d (%s) en background finalizado con exit code %d]\n"COLOR_RESET, ended, jobs_list[pos].cmd, WEXITSTATUS(status));
 #endif
             }
             else if (WIFSIGNALED(status))
             {
+                printf("\nTerminando PID %d (%s) en jobs_list[%d] con status %d]\n", ended, jobs_list[pos].cmd, pos, WTERMSIG(status));
 #if DEBUG5
-                printf("\n[Proceso hijo %d (ps f) en background (%s) finalizado con exit code %d]\n", ended, jobs_list[pos].cmd, WTERMSIG(status));
+                printf(GRAY"\n[Proceso hijo %d (%s) en backgroundfinalizado con exit code %d]\n"COLOR_RESET, ended, jobs_list[pos].cmd, WTERMSIG(status));
 #endif
             }
 
