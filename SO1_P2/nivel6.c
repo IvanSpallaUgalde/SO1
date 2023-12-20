@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <fcntl.h>
 
 #define DEBUG 0
 #define DEBUG3 0
@@ -61,10 +62,14 @@ void reaper(int signum);
 void ctrlc(int signum);
 void ctrlz(int signum);
 
+int is_output_redirection(char **args);
 int is_background(char **args);
 int jobs_list_add(pid_t pid, char estado, char *cmd);
 int jobs_list_find(pid_t pid);
 int jobs_list_remove(int pos);
+
+//Extra functions
+int remove_bg(char *line);
 
 int main(int argc, char *argv[])
 {
@@ -139,7 +144,7 @@ int execute_line(char *line)
     char cmd[COMMAND_LINE_SIZE];
 
     strcpy(cmd, line);
-    
+
     if (args == NULL)
     {
         fprintf(stderr, RED "Error: Memoria dinamica insuficiente" COLOR_RESET);
@@ -149,7 +154,7 @@ int execute_line(char *line)
     int num_args = parse_args(args, line);
 
     int is_bg = is_background(args);
-    
+
     if (num_args > 0)
     {
 
@@ -172,7 +177,8 @@ int execute_line(char *line)
                 signal(SIGCHLD, SIG_DFL);
                 signal(SIGINT, SIG_IGN);
                 signal(SIGTSTP, SIG_IGN);
-                
+                is_output_redirection(args);
+
                 if (execvp(args[0], args) == FALLO)
                 {
                     perror("execvp error");
@@ -186,9 +192,9 @@ int execute_line(char *line)
                 if (is_bg)
                 {
 #if DEBUG5
-                    printf(GRAY"Proceso en background\n"COLOR_RESET);
+                    printf(GRAY "Proceso en background\n" COLOR_RESET);
 #endif
-                    
+
                     jobs_list_add(pid, 'E', cmd);
                 }
                 else
@@ -460,49 +466,82 @@ int internal_fg(char **args)
 
     int pos = atoi(args[1]);
 
-    if (pos < 1 || pos >= n_jobs)
+    if (pos <= 0 || pos >= n_jobs)
     {
-        fprintf(stderr,"fg %d: No existe el trabajo con PID = %d\n", pos, pos);
+        fprintf(stderr, "fg %d: No existe ese trabajo\n", pos);
         return FALLO;
     }
-    
+
     if (jobs_list[pos].estado == 'D')
     {
         if (kill(jobs_list[pos].pid, SIGCONT) == -1)
         {
-            fprintf(stderr,"Error enviando la señal SIGCONT al proceso %d (%s)\n", jobs_list[pos].pid, jobs_list[pos].cmd);
+            fprintf(stderr, "Error enviando la señal SIGCONT al proceso %d (%s)\n", jobs_list[pos].pid, jobs_list[pos].cmd);
             return -1;
         }
-        else{
+        else
+        {
 #if DEBUG6
-            printf(GRAY"[internal_fg() -> Señal 18 (SIGCONT) enviada a %d (%s)]\n"COLOR_RESET, jobs_list[pos].pid, jobs_list[pos].cmd);
+            printf(GRAY "[internal_fg() -> Señal 18 (SIGCONT) enviada a %d (%s)]\n" COLOR_RESET, jobs_list[pos].pid, jobs_list[pos].cmd);
 #endif
-            printf("%s",jobs_list[pos].cmd);
-
-            strcpy(jobs_list[0].cmd, jobs_list[pos].cmd);
-            jobs_list[0].pid = jobs_list[pos].pid;
-            jobs_list[0].estado = 'E';
-
-            jobs_list_remove(pos);
-
-            while (jobs_list[0].pid)
-            {
-                pause();
-            }
-            return EXITO;
         }
     }
-    
 
+    //Eliminamos el caracter '&'
+    remove_bg(jobs_list[pos].cmd);
+
+    strcpy(jobs_list[0].cmd, jobs_list[pos].cmd);
+    jobs_list[0].pid = jobs_list[pos].pid;
+    jobs_list[0].estado = 'E';
+
+    jobs_list_remove(pos);
+
+    printf("%s\n", jobs_list[0].cmd);
+
+    while (jobs_list[0].pid)
+    {
+        pause();
+    }
+    return EXITO;
 
     return 0;
 }
 
 int internal_bg(char **args)
 {
-#if DEBUG
-    printf(GRAY "[internal_bg() -> Esta funcion pasara a segundo plano procesos]\n" COLOR_RESET);
+    if (args[1] == NULL)
+    {
+        fprintf(stderr, "Sintaxis correcta: bg [PID DEL TRABAJO]\n");
+        return FALLO;
+    }
+
+    int pos = atoi(args[1]);
+
+    if (pos >= n_jobs || pos == 0)
+    {
+        fprintf(stderr, "bg %d: No existe ese trabajo\n", pos);
+        return FALLO;
+    }
+
+    if (jobs_list[pos].estado == 'D')
+    {
+        strcat(jobs_list[pos].cmd, " &\0");
+
+        jobs_list[pos].estado = 'E';
+
+        kill(jobs_list[pos].pid, SIGCONT);
+
+#if DEBUG6
+        printf(GRAY "[internal_bg() -> Señal 18 (SIGCONT) enviada a %d (%s)]\n" COLOR_RESET, jobs_list[pos].pid, jobs_list[pos].cmd);
 #endif
+
+        printf("[%d]\t%d\t%c\t%s\n", pos, jobs_list[pos].pid, jobs_list[pos].estado, jobs_list[pos].cmd);
+    }
+    else
+    {
+        printf(RED "bg %d: el trabajo ya esta en segundo plano\n" COLOR_RESET, pos);
+    }
+
     return 0;
 }
 
@@ -529,10 +568,10 @@ int is_background(char **args)
     {
         i++;
 #if DEBGUMINE
-        printf("args[%d] = %s\n", i-1, args[i-1]);
+        printf("args[%d] = %s\n", i - 1, args[i - 1]);
 #endif
     }
-    
+
     // Comprobar si & e ultimo caracter para eliminarlo y devolver 1
     if (i > 0 && strcmp(args[i - 1], "&") == 0)
     {
@@ -550,7 +589,7 @@ int jobs_list_add(pid_t pid, char estado, char *cmd)
     printf("n_jobs = %d\n", n_jobs);
 #endif
     if (n_jobs < MAX_JOBS)
-    {  
+    {
         jobs_list[n_jobs].pid = pid;
 #if DEBGUMINE
         printf("jobs_list_add() -> estado = %c\n", estado);
@@ -598,7 +637,7 @@ int jobs_list_remove(int pos)
     jobs_list[n_jobs - 1].estado = '\0';
     jobs_list[n_jobs - 1].cmd[0] = '\0';
 
-    n_jobs--; 
+    n_jobs--;
     return EXITO;
 }
 
@@ -606,6 +645,7 @@ void ctrlz(int signum)
 {
     signal(SIGTSTP, ctrlz);
 
+    printf("\n");
     if (jobs_list[0].pid > 0)
     {
         if (strcmp(jobs_list[0].cmd, mi_shell))
@@ -625,20 +665,65 @@ void ctrlz(int signum)
         }
         else
         {
+#if DEBUG5
             printf("[ctrlz() -> Señal %d (SIGTSTP) no enviada debido a que el proceso en foreground es el shell]\n", signum);
+#endif
         }
     }
     else
     {
+#if DEBGU5
         printf("[ctrlz() -> Señal %d (SIGTSTP) no enviada debido a que no hay proceso en el foreground]\n", signum);
+#endif
     }
 
+    printf("\n");
     fflush(stdout);
 }
 
 /*
             END NUEVAS FUNCIONES NIVEL 5
 */
+
+int is_output_redirection(char **args)
+{
+    int i;
+    for (i = 0; args[i] != NULL; i++)
+    {
+        if (strcmp(args[i], ">") == 0)
+        {
+            char *file = args[i + 1];
+            if (file == NULL)
+            {
+                fprintf(stderr, RED "Sintaxis correcta: COMMAND > FILE_NAME\n" COLOR_RESET);
+                return 0;
+            }
+
+            int fd = open(file, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+            if (fd == -1)
+            {
+                perror("Error creando el archivo\n");
+                return 0;
+            }
+
+            if (dup2(fd, 1) == -1)
+            {
+                perror("Error duplicating file descriptor\n");
+                close(fd);
+                return 0;
+            }
+
+            close(fd);
+
+            args[i] = NULL;
+            args[i + 1] = NULL;
+
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void reaper(int signum)
 {
     signal(SIGCHLD, reaper);
@@ -675,14 +760,14 @@ void reaper(int signum)
             {
                 printf("\nTerminando PID %d (%s) en jobs_list[%d] con status %d]\n", ended, jobs_list[pos].cmd, pos, WEXITSTATUS(status));
 #if DEBUG5
-                printf(GRAY"\n[reaper() -> Proceso hijo %d (%s) en background finalizado con exit code %d]\n"COLOR_RESET, ended, jobs_list[pos].cmd, WEXITSTATUS(status));
+                printf(GRAY "\n[reaper() -> Proceso hijo %d (%s) en background finalizado con exit code %d]\n" COLOR_RESET, ended, jobs_list[pos].cmd, WEXITSTATUS(status));
 #endif
             }
             else if (WIFSIGNALED(status))
             {
                 printf("\nTerminando PID %d (%s) en jobs_list[%d] con status %d]\n", ended, jobs_list[pos].cmd, pos, WTERMSIG(status));
 #if DEBUG5
-                printf(GRAY"\n[Proceso hijo %d (%s) en backgroundfinalizado con exit code %d]\n"COLOR_RESET, ended, jobs_list[pos].cmd, WTERMSIG(status));
+                printf(GRAY "\n[Proceso hijo %d (%s) en backgroundfinalizado con exit code %d]\n" COLOR_RESET, ended, jobs_list[pos].cmd, WTERMSIG(status));
 #endif
             }
 
@@ -694,7 +779,6 @@ void reaper(int signum)
 void ctrlc(int signum)
 {
     signal(SIGINT, ctrlc);
-    printf("\n");
 
 #if DEBUG4
     printf(GRAY "[ctrlc() -> Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]" COLOR_RESET, getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
@@ -721,4 +805,18 @@ void ctrlc(int signum)
     }
     printf("\n");
     fflush(stdout);
+}
+
+int remove_bg(char *line)
+{
+    int num_char = strlen(line);
+    if(line[num_char - 1] == '&')
+    {
+        line[num_char - 2] = '\0';
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
 }
