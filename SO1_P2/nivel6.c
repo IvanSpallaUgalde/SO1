@@ -406,7 +406,8 @@ int internal_source(char **args)
     FILE *file = fopen(args[1], "r");
     if (file == NULL)
     {
-        perror(RED "fopen error:" COLOR_RESET);
+        perror(RED "fopen error:");
+        printf(COLOR_RESET);
         return FALLO;
     }
 
