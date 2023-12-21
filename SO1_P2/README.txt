@@ -1,6 +1,7 @@
 Alumnos:
 Ivan Spalla Ugalde
-
+Marc Nadal Sastre Gondar
+Veimar Israel Flores Rios
 
 
 Observaciones:
