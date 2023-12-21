@@ -7,9 +7,8 @@
 #include <signal.h>
 
 #define DEBUG 0
-#define DEBUG3 1
+#define DEBUG3 0
 #define DEBUG4 1
-#define DEBUGE 0
 #define COMMAND_LINE_SIZE 1024
 #define ARGS_SIZE 64
 #define PROMPT '$'

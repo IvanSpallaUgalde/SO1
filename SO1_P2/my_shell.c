@@ -12,7 +12,7 @@
 #define DEBUG4 0
 #define DEBUG5 0
 #define DEBGUMINE 0
-#define DEBUG6 1
+#define DEBUG6 0
 #define COMMAND_LINE_SIZE 1024
 #define ARGS_SIZE 64
 #define PROMPT $

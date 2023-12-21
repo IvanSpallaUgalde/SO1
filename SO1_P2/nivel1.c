@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define DEBUG 1
+#define DEBUG1 1
 #define COMMAND_LINE_SIZE 1024
 #define ARGS_SIZE 64
 #define PROMPT '$'
@@ -104,7 +104,7 @@ int execute_line(char *line)
         {
             if (!check_internal(args))
             {
-#if DEBUG
+#if DEBUG1
             printf("Commando externo\n");
 #endif
             }
@@ -127,7 +127,7 @@ int parse_args(char **args, char*line)
     while (token != NULL)
     {
 
-#if DEBUG
+#if DEBUG1
         printf("[Parse_args() -> token %d: %s]\n", token_counter, token);
 #endif
         if (token[0] == comment_char)
@@ -138,7 +138,7 @@ int parse_args(char **args, char*line)
 
         args[token_counter] = token;
 
-#if DEBUG
+#if DEBUG1
         printf("[parse_args() -> token %d corregido: %s]\n", token_counter, token);
 #endif
         token = strtok(NULL, deLimiters);
@@ -249,7 +249,7 @@ int internal_bg(char **args)
 
 int internal_exit(char **args)
 {
-#if DEBUG
+#if DEBUG1
     printf("[internal_exit() -> Esta funcion sale del minishell]\n");
 #endif
     printf("Bye Bye\n");
