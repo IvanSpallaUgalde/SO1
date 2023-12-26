@@ -1,52 +1,12 @@
 #include <pthread.h>
-//#define MAX_SIZE 10 // Tamaño máximo de la pila (10)
-
-/*
-struct Stack {
-    int data[MAX_SIZE];
-    int top;
-}
-
-void initStack(struct Stack *stack) {
-    stack->top = -1;
-}
-
-int isEmpty(struct Stack *stack) {
-    return stack->top == -1;
-}
-
-int isFull(struct Stack *stack) {
-    return stack->top == MAX_SIZE - 1;
-}
-
-int peek(struct Stack *stack) {
-    return stack->data[stack->top];
-}
-
-int pop(struct Stack *stack) {
-    if (!isEmpty(stack)) {
-        int value = stack->data[stack->top];
-        stack->top--;
-        return value;
-    }
-    return INT_MIN; // Valor mínimo para indicar error (pila vacía)
-}
-
-void push(struct Stack *stack, int value) {
-    if (!isFull(stack)) {
-        stack->top++;
-        stack->data[stack->top] = value;
-    }
-}
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 
 #define MAX_THREADS 10
 #define STACK_SIZE 10
 
-// Suponiendo que tienes estas funciones definidas
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////CREO QUE NO HACE FALTA ESTA PARTE, HAY QUE HACER ALGO PARA USAR FUNCIONES DE OTRO FICHERO, PERO NO SÉ HACERLO////////////////
 void my_stack_init();
 int my_stack_len();
 void my_stack_push(int *data);
@@ -54,6 +14,7 @@ int *my_stack_pop();
 void my_stack_purge();
 void my_stack_read(FILE *file);
 void my_stack_write(FILE *file);
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Función para crear o verificar la pila
 void prepare_stack(char *filename) {
@@ -110,6 +71,8 @@ void prepare_stack(char *filename) {
         }
     }
 }
+
+
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
