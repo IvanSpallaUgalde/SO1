@@ -10,6 +10,21 @@ manejo de una pila */
 #include <sys/types.h> /* Definiciones de tipos de datos como size_t*/
 #include <unistd.h>    /* Funciones read(), write(), close()*/
 #include <errno.h>     /* COntrol de errores (errno) */
+#include <limits.h>
+
+#define DEBUG 1
+
+#define COLOR_RESET "\x1b[0m"
+#define GREEN       "\x1b[92m"
+#define CYAN        "\x1b[96m"
+#define YELLOW      "\x1b[93m"
+#define MAGENTA     "\x1b[95m"
+
+#define FALLO -1
+#define EXITO 0
+
+#define NUM_THREADS 10
+#define N 1000000
 
 //declaraciones funciones libreria string
 size_t my_strlen(const char *str);
@@ -40,4 +55,9 @@ int my_stack_len(struct my_stack *stack);
 int my_stack_purge(struct my_stack *stack); 
 struct my_stack *my_stack_read(char *filename);
 int my_stack_write(struct my_stack *stack, char *filename);
+
+//stack_counter.c
+struct my_stack stack_create(char *filename);
+void fill();
+
     
