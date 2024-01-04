@@ -240,9 +240,10 @@ struct my_stack *my_stack_read(char *filename){
     void *datos;
 
     int fichero = open(filename, O_RDONLY);    //Abrimos el fichero en modo lectura
-
     if (fichero < 0){ //Comprobamos si el fichero se ha abierto correctamente
+#if DEBUGm
         fprintf(stderr, "\nError al abrir el fichero");
+#endif
         return NULL;
     }
 

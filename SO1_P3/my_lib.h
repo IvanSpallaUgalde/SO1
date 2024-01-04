@@ -12,7 +12,7 @@ manejo de una pila */
 #include <errno.h>     /* COntrol de errores (errno) */
 #include <limits.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 #define COLOR_RESET "\x1b[0m"
 #define GREEN       "\x1b[92m"
@@ -57,7 +57,8 @@ struct my_stack *my_stack_read(char *filename);
 int my_stack_write(struct my_stack *stack, char *filename);
 
 //stack_counter.c
-struct my_stack stack_create(char *filename);
+void read_stack(struct my_stack *stack);
+struct my_stack *stack_create(char *filename);
 void fill();
 
     
