@@ -13,7 +13,13 @@
 
     Ya que daba un resultado incorrecto a la hora de contar los Bytes liberados
 
-    Y los includes
+    Y los includes y defines necesarios para el trabajo se han hecho dentro
+    de stack_counter.c y reader.c, aunque algunos se repitan, no se han incluido
+    dentro de my_lib.h para mantener una copia identica al my_lib.h de la 
+    practia 1. 
+    Esto ha resultado en que ambos archivos tengan el define DEBUG que tienen que
+    tener el mismo valor para que no ocurra ningun error. 
+
 */
 #include <pthread.h>
 #include "my_lib.h"
