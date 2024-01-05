@@ -1,4 +1,41 @@
+/*
+    Practica 3 Sistemas Operativos 1
+
+    Nombre participantes del trabajo:
+    -Ivan Spalla Ugalde
+    -Marc Nadal Sastre Gondar
+    -Veimar Israel Flores Rios
+
+*/
 #include "my_lib.h"
+#include <limits.h>
+
+//Defines
+
+#define DEBUG 0
+
+#define COLOR_RESET "\x1b[0m"
+#define GREEN       "\x1b[92m"
+#define CYAN        "\x1b[96m"
+#define YELLOW      "\x1b[93m"
+#define MAGENTA     "\x1b[95m"
+
+#define FALLO -1
+#define EXITO 0
+
+#if (DEBUG == 1)
+#define NUM_THREADS 3
+#define N 5
+#endif
+
+#if (DEBUG == 0)
+#define NUM_THREADS 10
+#define N 1000000
+#endif
+
+//Declaracion de funciones
+struct my_stack *invert_stack(struct my_stack *stack);
+
 
 int main(int argc, char *argv[]) {
 

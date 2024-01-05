@@ -1,7 +1,53 @@
+/*
+    Practica 3 Sistemas Operativos 1
+
+    Nombre participantes del trabajo:
+    -Ivan Spalla Ugalde
+    -Marc Nadal Sastre Gondar
+    -Veimar Israel Flores Rios
+
+    Observaciones: 
+    Se ha modificado int my_stack_purge(struct my_stack *stack) de my_lib.c. 
+    Se ha eliminado la siguiente linea de codigo:
+    cantByt = cantByt + sizeof(struct my_stack);
+
+    Ya que daba un resultado incorrecto a la hora de contar los Bytes liberados
+
+*/
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "my_lib.h"
+
+//Defines
+
+#define DEBUG 0
+
+#define COLOR_RESET "\x1b[0m"
+#define GREEN       "\x1b[92m"
+#define CYAN        "\x1b[96m"
+#define YELLOW      "\x1b[93m"
+#define MAGENTA     "\x1b[95m"
+
+#define FALLO -1
+#define EXITO 0
+
+
+#if (DEBUG == 1)
+#define NUM_THREADS 3
+#define N 5
+#endif
+
+#if (DEBUG == 0)
+#define NUM_THREADS 10
+#define N 1000000
+#endif
+
+//Declaracion de funciones
+void read_stack();
+struct my_stack *stack_create(char *filename);
+void fill();
+
 
 static struct my_stack *stack;
 

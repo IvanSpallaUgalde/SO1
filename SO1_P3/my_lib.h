@@ -1,3 +1,4 @@
+
 /* lib.h librería con las funciones equivalentes a las
 de <string.h> y las funciones y estructuras para el
 manejo de una pila */
@@ -10,28 +11,6 @@ manejo de una pila */
 #include <sys/types.h> /* Definiciones de tipos de datos como size_t*/
 #include <unistd.h>    /* Funciones read(), write(), close()*/
 #include <errno.h>     /* COntrol de errores (errno) */
-#include <limits.h>
-
-#define DEBUG 0
-
-#define COLOR_RESET "\x1b[0m"
-#define GREEN       "\x1b[92m"
-#define CYAN        "\x1b[96m"
-#define YELLOW      "\x1b[93m"
-#define MAGENTA     "\x1b[95m"
-
-#define FALLO -1
-#define EXITO 0
-
-#if (DEBUG == 1)
-#define NUM_THREADS 3
-#define N 5
-#endif
-
-#if (DEBUG == 0)
-#define NUM_THREADS 10
-#define N 1000000
-#endif
 
 //declaraciones funciones libreria string
 size_t my_strlen(const char *str);
@@ -62,11 +41,3 @@ int my_stack_len(struct my_stack *stack);
 int my_stack_purge(struct my_stack *stack); 
 struct my_stack *my_stack_read(char *filename);
 int my_stack_write(struct my_stack *stack, char *filename);
-
-//stack_counter.c
-void read_stack();
-struct my_stack *stack_create(char *filename);
-void fill();
-
-//reader.c
-struct my_stack *invert_stack(struct my_stack *stack);
