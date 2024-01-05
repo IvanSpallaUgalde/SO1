@@ -23,8 +23,15 @@ manejo de una pila */
 #define FALLO -1
 #define EXITO 0
 
+#if (DEBUG == 1)
+#define NUM_THREADS 3
+#define N 5
+#endif
+
+#if (DEBUG == 0)
 #define NUM_THREADS 10
 #define N 1000000
+#endif
 
 //declaraciones funciones libreria string
 size_t my_strlen(const char *str);
@@ -57,8 +64,9 @@ struct my_stack *my_stack_read(char *filename);
 int my_stack_write(struct my_stack *stack, char *filename);
 
 //stack_counter.c
-void read_stack(struct my_stack *stack);
+void read_stack();
 struct my_stack *stack_create(char *filename);
 void fill();
 
-    
+//reader.c
+struct my_stack *invert_stack(struct my_stack *stack);

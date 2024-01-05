@@ -190,8 +190,6 @@ int my_stack_purge(struct my_stack *stack){
         free(my_stack_pop(stack));                        //Eliminamos el top actual de la pila
     }
     
-    cantByt = cantByt + sizeof(struct my_stack);    //Acabamos sumando lo que ocupa la propia pila como tal
-
     free(stack);               //Eliminamos la propia pila
     return cantByt;
 }
