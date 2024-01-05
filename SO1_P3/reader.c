@@ -16,9 +16,7 @@
 
 #define COLOR_RESET "\x1b[0m"
 #define GREEN       "\x1b[92m"
-#define CYAN        "\x1b[96m"
 #define YELLOW      "\x1b[93m"
-#define MAGENTA     "\x1b[95m"
 
 #define FALLO -1
 #define EXITO 0
