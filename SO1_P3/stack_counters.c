@@ -13,10 +13,9 @@
 
     Ya que daba un resultado incorrecto a la hora de contar los Bytes liberados
 
+    Y los includes
 */
 #include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include "my_lib.h"
 
 //Defines
